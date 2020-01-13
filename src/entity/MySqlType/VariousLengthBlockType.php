@@ -4,16 +4,13 @@
 namespace sinri\BinlogReader\entity\MySqlType;
 
 
-use Exception;
-use sinri\BinlogReader\BinlogReader;
-
 class VariousLengthBlockType extends BaseType
 {
 
     /**
      * @inheritDoc
      */
-    public function getValueSize($meta = [])
+    public function getValueSize($meta = null)
     {
         // TODO: Implement getValueSize() method.
     }
@@ -21,7 +18,7 @@ class VariousLengthBlockType extends BaseType
     /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = [])
+    function readValueFromStream($reader, $meta = null)
     {
         // TODO: Implement readValueFromStream() method.
     }

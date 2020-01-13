@@ -10,7 +10,7 @@ class DoubleType extends BaseType
     /**
      * @inheritDoc
      */
-    public function getValueSize($meta = [])
+    public function getValueSize($meta = null)
     {
         return 8;
     }
@@ -18,7 +18,7 @@ class DoubleType extends BaseType
     /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = [])
+    function readValueFromStream($reader, $meta = null)
     {
         $number = $reader->readNumber($this->getValueSize($meta));
         $pack = unpack('d', pack('q', $number));

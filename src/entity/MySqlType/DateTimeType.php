@@ -4,7 +4,6 @@
 namespace sinri\BinlogReader\entity\MySqlType;
 
 
-use sinri\ark\core\ArkHelper;
 use sinri\BinlogReader\BRKit;
 
 class DateTimeType extends DateType
@@ -50,17 +49,17 @@ class DateTimeType extends DateType
     /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = [])
+    function readValueFromStream($reader, $meta = null)
     {
-        if($this->version==self::VERSION_AS_OF_5_6_4){
-            $this->fsp=$meta;
+        if ($this->version == self::VERSION_AS_OF_5_6_4) {
+            $this->fsp = $meta;
         }
 
-        if($this->size===null) {
+        if ($this->size === null) {
             $this->read($reader);
         }
 
-        $reader->getLogger()->debug("BUFFER: ".BRKit::binInlineNumbers($this->buffer));
+        $reader->getLogger()->debug("BUFFER: " . BRKit::binInlineNumbers($this->buffer));
 
         return ($this->isNegative?'-':'').$this->makeDateString().' '.$this->makeTimeString();
     }

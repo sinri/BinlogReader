@@ -193,7 +193,8 @@ class BinlogReader
      */
     public function readString(int $length)
     {
-        if ($length <= 0) throw new Exception(__METHOD__ . '@' . __LINE__);
+        $this->logger->debug(__METHOD__ . '@' . __LINE__, ['length' => $length]);
+        if ($length <= 0) throw new Exception(__METHOD__ . '@' . __LINE__ . ' length is lower,  as ' . $length);
         $text = fread($this->binlogFileHandler, $length);
         for ($i = 0; $i < strlen($text); $i++) {
             if ($text[$i] === "\0") {
@@ -296,10 +297,12 @@ class BinlogReader
     /**
      * @param int $nextPosition
      * @return bool True for Reached Tail
+     * @throws Exception
      */
     public function checkIfReachedTail($nextPosition){
         $here = ftell($this->binlogFileHandler);
         $this->logger->debug(__METHOD__, ['here' => $here, 'nextPosition' => $nextPosition, 'checksum_bytes' => BaseBinlogV4EventEntity::checksumByteCount()]);
+        if ($here > $nextPosition) throw new Exception("Over Drive!");
         return ($nextPosition==$here+BaseBinlogV4EventEntity::checksumByteCount());
     }
 

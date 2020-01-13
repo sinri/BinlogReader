@@ -6,7 +6,6 @@ namespace sinri\BinlogReader\entity\MySqlType;
 
 use Exception;
 use sinri\ark\core\ArkHelper;
-use sinri\BinlogReader\BinlogReader;
 
 /**
  * Class DecimalType
@@ -95,16 +94,16 @@ class DecimalType extends BaseType
      * @inheritDoc
      * @throws Exception
      */
-    public function getValueSize($meta = [])
+    public function getValueSize($meta = null)
     {
-        return $this->getBinSizeForPrecisionAndScale($meta[0],$meta[1]);
+        return $this->getBinSizeForPrecisionAndScale($meta[0], $meta[1]);
     }
 
     /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = [])
+    function readValueFromStream($reader, $meta = null)
     {
-        return $this->readBufferFromStream($reader,$meta);
+        return $this->readBufferFromStream($reader, $meta);
     }
 }

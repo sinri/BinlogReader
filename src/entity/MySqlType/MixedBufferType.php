@@ -28,9 +28,9 @@ class MixedBufferType extends BaseType
      * @return int
      * @throws Exception
      */
-    public function getValueSize($meta = [])
+    public function getValueSize($meta = null)
     {
-        if($this->size===null) {
+        if ($this->size === null) {
             $reader = $meta[0];
             $this->read($reader);
         }
@@ -43,9 +43,9 @@ class MixedBufferType extends BaseType
      * @return string
      * @throws Exception
      */
-    function readValueFromStream($reader, $meta = [])
+    function readValueFromStream($reader, $meta = null)
     {
-        if($this->size===null) {
+        if ($this->size === null) {
             $this->read($reader);
         }
         return $this->buffer;

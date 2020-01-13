@@ -55,13 +55,13 @@ class TimeType extends MixedBufferType
     /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = [])
+    function readValueFromStream($reader, $meta = null)
     {
         if ($this->size === null) {
             $this->read($reader);
         }
-        if($this->version==self::VERSION_AS_OF_5_6_4){
-            $this->fsp=$meta;
+        if ($this->version == self::VERSION_AS_OF_5_6_4) {
+            $this->fsp = $meta;
         }
         if ($this->version == self::VERSION_BEFORE_5_6_4) {
             if ($this->readByteInBuffer(0) > 0) {

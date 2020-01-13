@@ -4,15 +4,12 @@
 namespace sinri\BinlogReader\entity\MySqlType;
 
 
-use Exception;
-use sinri\BinlogReader\BinlogReader;
-
 abstract class BaseIntegerType extends BaseType
 {
     /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = [])
+    function readValueFromStream($reader, $meta = null)
     {
         return $reader->readNumber($this->getValueSize($meta));
     }

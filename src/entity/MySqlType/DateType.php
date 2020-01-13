@@ -4,9 +4,6 @@
 namespace sinri\BinlogReader\entity\MySqlType;
 
 
-use Exception;
-use sinri\BinlogReader\BinlogReader;
-
 class DateType extends MixedBufferType
 {
     protected $year;
@@ -16,9 +13,9 @@ class DateType extends MixedBufferType
     /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = [])
+    function readValueFromStream($reader, $meta = null)
     {
-        if($this->size===null) {
+        if ($this->size === null) {
             $this->read($reader);
         }
 

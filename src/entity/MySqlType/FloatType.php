@@ -4,16 +4,13 @@
 namespace sinri\BinlogReader\entity\MySqlType;
 
 
-use Exception;
-use sinri\BinlogReader\BinlogReader;
-
 class FloatType extends BaseType
 {
 
     /**
      * @inheritDoc
      */
-    public function getValueSize($meta = [])
+    public function getValueSize($meta = null)
     {
         return 4;
     }
@@ -21,9 +18,9 @@ class FloatType extends BaseType
     /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = [])
+    function readValueFromStream($reader, $meta = null)
     {
-        $number=$reader->readNumber($this->getValueSize($meta));
+        $number = $reader->readNumber($this->getValueSize($meta));
         return unpack('f', pack('i', $number));
     }
 }

@@ -10,8 +10,8 @@ class Int24Type extends BaseIntegerType
     /**
      * @inheritDoc
      */
-    public function getValueSize($meta = [])
+    public function getValueSize($meta = null)
     {
-        return 4;
+        return 3;
     }
 }

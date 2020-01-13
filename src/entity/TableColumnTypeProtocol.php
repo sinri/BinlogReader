@@ -6,6 +6,7 @@ namespace sinri\BinlogReader\entity;
 use Exception;
 use sinri\ark\core\ArkHelper;
 use sinri\BinlogReader\BinlogReader;
+use sinri\BinlogReader\entity\MySqlType\BlobType;
 use sinri\BinlogReader\entity\MySqlType\DateTimeType;
 use sinri\BinlogReader\entity\MySqlType\DateType;
 use sinri\BinlogReader\entity\MySqlType\DecimalType;
@@ -14,7 +15,6 @@ use sinri\BinlogReader\entity\MySqlType\FloatType;
 use sinri\BinlogReader\entity\MySqlType\Int24Type;
 use sinri\BinlogReader\entity\MySqlType\LongIntType;
 use sinri\BinlogReader\entity\MySqlType\LongLongIntType;
-use sinri\BinlogReader\entity\MySqlType\MixedBufferType;
 use sinri\BinlogReader\entity\MySqlType\ShortIntType;
 use sinri\BinlogReader\entity\MySqlType\StringType;
 use sinri\BinlogReader\entity\MySqlType\TimestampType;
@@ -138,7 +138,7 @@ class TableColumnTypeProtocol
      */
     public static function readValueByType($reader,$type,$metaBuffer=[])
     {
-        $reader->getLogger()->debug(__METHOD__,['type'=>$type,'meta'=>$metaBuffer]);
+//        $reader->getLogger()->debug(__METHOD__,['type'=>$type,'meta'=>$metaBuffer]);
         // directly read form stream
         switch ($type) {
             case self::Protocol_MYSQL_TYPE_NEWDECIMAL:
@@ -157,6 +157,7 @@ class TableColumnTypeProtocol
             case self::Protocol_MYSQL_TYPE_SHORT:
                 return (new ShortIntType())->readValueFromStream($reader,$metaBuffer);
             case self::Protocol_MYSQL_TYPE_LONG:
+
                 return (new LongIntType())->readValueFromStream($reader,$metaBuffer);
             case self::Protocol_MYSQL_TYPE_FLOAT:
                 return (new FloatType())->readValueFromStream($reader,$metaBuffer);
@@ -188,10 +189,12 @@ class TableColumnTypeProtocol
             case self::Protocol_MYSQL_TYPE_BLOB:
             case self::Protocol_MYSQL_TYPE_GEOMETRY:
             case self::Protocol_MYSQL_TYPE_BIT:
-                return (new MixedBufferType())->readValueFromStream($reader,$metaBuffer);
+                return (new BlobType())->readValueFromStream($reader, $metaBuffer);
+            //return (new MixedBufferType())->readValueFromStream($reader,$metaBuffer);
             case self::Protocol_MYSQL_TYPE_VARCHAR:
             case self::Protocol_MYSQL_TYPE_VAR_STRING:
-            return (new VarcharType())->readValueFromStream($reader);
+                $reader->getLogger()->debug(__METHOD__, ['type' => $type, 'meta' => $metaBuffer]);
+                return (new VarcharType(3))->readValueFromStream($reader, $metaBuffer);
             case self::Protocol_MYSQL_TYPE_STRING:
                 return (new StringType())->readValueFromStream($reader);
             case self::Protocol_MYSQL_TYPE_NULL:
