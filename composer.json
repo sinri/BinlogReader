@@ -1,0 +1,21 @@
+{
+  "name": "sinri/binlog-reader",
+  "description": "PHP Mysql Binlog Reader",
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Sinri Edogawa",
+      "email": "e.joshua.s.e@gmail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "sinri\\BinlogReader\\": "src/"
+    }
+  },
+  "require": {
+    "sinri/ark-core": "~2.5",
+    "ext-json": "*"
+  }
+}
