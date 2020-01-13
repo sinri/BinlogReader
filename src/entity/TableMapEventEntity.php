@@ -4,7 +4,6 @@
 namespace sinri\BinlogReader\entity;
 
 
-use sinri\BinlogReader\BinlogReader;
 use sinri\BinlogReader\BRKit;
 
 class TableMapEventEntity extends BaseBinlogV4EventEntity
@@ -123,9 +122,13 @@ class TableMapEventEntity extends BaseBinlogV4EventEntity
             ."Flags: ".$this->flags." Column Count: ".$this->columnCount.PHP_EOL;
         $s.="Table Column Types: ".PHP_EOL;
         for($i=0;$i<$this->columnCount;$i++){
-            $s.="[$i] ".BRKit::hexOneNumber($this->columnTypeDef[$i]).PHP_EOL;
+            $s .= "[$i] " . BRKit::hexOneNumber($this->columnTypeDef[$i])
+                . ' ' . TableColumnTypeProtocol::getTypeName($this->columnTypeDef[$i])
+                . (isset($this->columnMetaDef[$i]) ? (' Meta: ' . json_encode($this->columnMetaDef[$i])) : '')
+                . PHP_EOL;
+
         }
-        $s.="Column Meta Def: ".BRKit::hexInlineNumbers($this->columnMetaDef).PHP_EOL;
+        //$s.="Column Meta Def: ".BRKit::hexInlineNumbers($this->columnMetaDef).PHP_EOL;
         $s.="Null Bit Map: ".BRKit::binInlineNumbers($this->nullBitmap);
         return $s;
     }

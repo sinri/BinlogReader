@@ -191,24 +191,40 @@ class BinlogReader
      * @return false|string
      * @throws Exception
      */
-    public function readString(int $length){
-        if($length<=0) throw new Exception(__METHOD__.'@'.__LINE__);
-        $text = fread($this->binlogFileHandler,$length);
-        for($i=0;$i<strlen($text);$i++){
-            if($text[$i]==="\0"){
-                return substr($text,0,$i);
+    public function readString(int $length)
+    {
+        if ($length <= 0) throw new Exception(__METHOD__ . '@' . __LINE__);
+        $text = fread($this->binlogFileHandler, $length);
+        for ($i = 0; $i < strlen($text); $i++) {
+            if ($text[$i] === "\0") {
+                return substr($text, 0, $i);
             }
         }
         return $text;
     }
 
-    public function openFile(){
-        $this->binlogFileHandler=fopen($this->binlogFile,"rb");
-        if(!$this->binlogFileHandler) throw new Exception("Cannot open binlog file to read");
+    public function readStringEndedWithZero()
+    {
+        $text = "";
+        do {
+            $char = fread($this->binlogFileHandler, 1);
+            if ($char === "\0") {
+                break;
+            }
+            $text .= $char;
+        } while (true);
+        return $text;
+    }
+
+    public function openFile()
+    {
+        $this->binlogFileHandler = fopen($this->binlogFile, "rb");
+        if (!$this->binlogFileHandler) throw new Exception("Cannot open binlog file to read");
         return $this;
     }
 
-    public function closeFile(){
+    public function closeFile()
+    {
         fclose($this->binlogFileHandler);
         return $this;
     }
@@ -282,8 +298,8 @@ class BinlogReader
      * @return bool True for Reached Tail
      */
     public function checkIfReachedTail($nextPosition){
-        $here=ftell($this->binlogFileHandler);
-        $this->logger->debug(__METHOD__,['here'=>$here]);
+        $here = ftell($this->binlogFileHandler);
+        $this->logger->debug(__METHOD__, ['here' => $here, 'nextPosition' => $nextPosition, 'checksum_bytes' => BaseBinlogV4EventEntity::checksumByteCount()]);
         return ($nextPosition==$here+BaseBinlogV4EventEntity::checksumByteCount());
     }
 

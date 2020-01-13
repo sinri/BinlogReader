@@ -4,9 +4,6 @@
 namespace sinri\BinlogReader\entity\MySqlType;
 
 
-use Exception;
-use sinri\BinlogReader\BinlogReader;
-
 class DoubleType extends BaseType
 {
 
@@ -23,7 +20,9 @@ class DoubleType extends BaseType
      */
     function readValueFromStream($reader, $meta = [])
     {
-        $number=$reader->readNumber($this->getValueSize($meta));
-        return unpack('d', pack('i', $number));
+        $number = $reader->readNumber($this->getValueSize($meta));
+        $pack = unpack('d', pack('q', $number));
+        //var_dump($pack);
+        return $pack[1];
     }
 }

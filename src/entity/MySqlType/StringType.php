@@ -14,6 +14,7 @@ class StringType extends BaseType
 
     /**
      * @param BinlogReader $reader
+     * @throws Exception
      */
     protected function read($reader){
         $this->size=$reader->readLenencInt();
@@ -23,6 +24,7 @@ class StringType extends BaseType
     /**
      * @param BinlogReader[] $meta [reader]
      * @return int
+     * @throws Exception
      */
     public function getValueSize($meta = [])
     {
@@ -37,6 +39,7 @@ class StringType extends BaseType
      * @param BinlogReader $reader
      * @param array $meta
      * @return string
+     * @throws Exception
      */
     function readValueFromStream($reader, $meta = [])
     {

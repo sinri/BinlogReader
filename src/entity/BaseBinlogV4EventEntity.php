@@ -173,6 +173,9 @@ abstract class BaseBinlogV4EventEntity
                 $entity->version = RowsEventEntity::VERSION_2;
                 $entity->method = RowsEventEntity::TYPE_DELETE;
                 break;
+            case BinlogV4EventHeaderEntity::TYPE_XID_EVENT:
+                $entity = new XIDEventEntity($header);
+                break;
 
             case BinlogV4EventHeaderEntity::TYPE_START_EVENT_V3:
             case BinlogV4EventHeaderEntity::TYPE_STOP_EVENT:
@@ -186,7 +189,7 @@ abstract class BaseBinlogV4EventEntity
             case BinlogV4EventHeaderEntity::TYPE_DELETE_FILE_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_NEW_LOAD_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_RAND_EVENT:
-            case BinlogV4EventHeaderEntity::TYPE_XID_EVENT:
+
             case BinlogV4EventHeaderEntity::TYPE_BEGIN_LOAD_QUERY_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_EXECUTE_LOAD_QUERY_EVENT:
 

@@ -20,6 +20,7 @@ use sinri\BinlogReader\entity\MySqlType\StringType;
 use sinri\BinlogReader\entity\MySqlType\TimestampType;
 use sinri\BinlogReader\entity\MySqlType\TimeType;
 use sinri\BinlogReader\entity\MySqlType\TinyIntType;
+use sinri\BinlogReader\entity\MySqlType\VarcharType;
 use sinri\BinlogReader\entity\MySqlType\YearType;
 
 /**
@@ -190,6 +191,7 @@ class TableColumnTypeProtocol
                 return (new MixedBufferType())->readValueFromStream($reader,$metaBuffer);
             case self::Protocol_MYSQL_TYPE_VARCHAR:
             case self::Protocol_MYSQL_TYPE_VAR_STRING:
+            return (new VarcharType())->readValueFromStream($reader);
             case self::Protocol_MYSQL_TYPE_STRING:
                 return (new StringType())->readValueFromStream($reader);
             case self::Protocol_MYSQL_TYPE_NULL:
