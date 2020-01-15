@@ -5,16 +5,12 @@ namespace sinri\BinlogReader\entity;
 
 
 use Exception;
-use sinri\BinlogReader\BinlogReader;
+use sinri\BinlogReader\BRByteBuffer;
+use sinri\BinlogReader\BREnv;
 use sinri\BinlogReader\BRKit;
 
-abstract class BaseBinlogV4EventEntity
+abstract class BaseEventEntity
 {
-    const CHECKSUM_NONE='NONE';
-    const CHECKSUM_CRC32='CRC32';
-
-    static protected $checksumMode=self::CHECKSUM_CRC32;
-
     /**
      * @var BinlogV4EventHeaderEntity
      */
@@ -22,159 +18,137 @@ abstract class BaseBinlogV4EventEntity
     /**
      * @var int a mysterious tail 4 bytes may be this
      */
-    public $crc32value;
+    public $checksum;
+    /**
+     * @var BRByteBuffer
+     */
+    protected $bodyBuffer;
 
     /**
-     * BaseBinlogV4EventEntity constructor.
+     * BaseEventEntity constructor.
      * @param BinlogV4EventHeaderEntity $header
+     * @param BRByteBuffer $bodyBuffer
+     * @param int $checksum
      */
-    public function __construct($header)
+    public function __construct($header, $bodyBuffer, $checksum)
     {
-        $this->header=$header;
-    }
-
-    public static function checksumByteCount(){
-        switch (self::$checksumMode){
-            case self::CHECKSUM_CRC32:
-                return 4;
-            default:
-                return 0;
-        }
-    }
-
-    /**
-     * @return string
-     */
-    public static function getChecksumMode(): string
-    {
-        return self::$checksumMode;
-    }
-
-    /**
-     * @param string $checksumMode
-     */
-    public static function setChecksumMode(string $checksumMode)
-    {
-        self::$checksumMode = $checksumMode;
+        $this->header = $header;
+        $this->bodyBuffer = $bodyBuffer;
+        $this->checksum = $checksum;
     }
 
     public function __toString()
     {
         //json_encode($this,JSON_PRETTY_PRINT);
-        return "=== Event Header ===".PHP_EOL
-            .$this->header->__toString().PHP_EOL
-            ."--- Event   Body ---".PHP_EOL
-            .$this->getHumanReadableDescription().PHP_EOL
-            ."=== Event   End === CRC32: ".BRKit::hexOneNumber($this->crc32value,4);
+        return "=== Event Header ===" . PHP_EOL
+            . $this->header->__toString() . PHP_EOL
+            . "--- Event   Body ---" . PHP_EOL
+            . $this->getHumanReadableDescription() . PHP_EOL
+            . "=== Event   End === CRC32: " . BRKit::hexOneNumber($this->checksum, 4);
 
     }
 
+    /**
+     * @throws Exception
+     */
+    protected function debugShowBody()
+    {
+        $bodyLength = $this->bodyBuffer->getSize();
+        BREnv::getLogger()->logInline("Debug Show Body ↓");
+        for ($i = 0; $i < $bodyLength; $i++) {
+            if ($i % 10 == 0) {
+                BREnv::getLogger()->logInline(PHP_EOL . str_pad($i, 6, "0", STR_PAD_LEFT) . "\t| ");
+            }
+            $x = $this->bodyBuffer->readNumberWithSomeBytesLE($i, 1);
+            BREnv::getLogger()->logInline(str_pad(dechex($x), 2, '0', STR_PAD_LEFT) . '(' . chr($x) . ') ');
+        }
+        BREnv::getLogger()->logInline(PHP_EOL);
+    }
+
+    /**
+     * @return string
+     */
     abstract public function getHumanReadableDescription();
 
     /**
-     * @param BinlogReader $reader
-     */
-    abstract public function readFromBinlogStream($reader);
-
-    /**
-     * @param BinlogReader $reader
      * @throws Exception
      */
-    public final function tryReadChecksum($reader){
-        $this->crc32value=$reader->readCrc32Tail($this->header->nextPosition);
-    }
+    abstract public function parseBodyBuffer();
 
     /**
-     * @param BinlogReader $reader
+     * @param BinlogV4EventHeaderEntity $header
+     * @param BRByteBuffer $bodyBuffer
+     * @param int $checksum
+     * @return bool|BaseEventEntity
      * @throws Exception
      */
-    protected function debugShowBody($reader){
-        $bodyLength=$this->header->eventLength-19;
-        $reader->getLogger()->logInline("Debug Show Body ↓");
-        for($i=0;$i<$bodyLength;$i++){
-            if($i%10==0){
-                $reader->getLogger()->logInline(PHP_EOL.str_pad($i,6,"0",STR_PAD_LEFT)."\t| ");
-            }
-            $x=$reader->readNumber(1);
-            $reader->getLogger()->logInline(str_pad(dechex($x),2,'0',STR_PAD_LEFT).'('.chr($x).') ');
-        }
-        $reader->getLogger()->logInline(PHP_EOL);
-    }
-
-    /**
-     * @param BinlogReader $reader
-     * @return BaseBinlogV4EventEntity|false
-     * @throws Exception
-     */
-    public static function parseNextEvent(BinlogReader $reader){
-        $entity=false;
-
-        $header=new BinlogV4EventHeaderEntity();
-        $header->readFromBinlogStream($reader);
+    public static function parseNextEvent($header, $bodyBuffer, $checksum)
+    {
+        $entity = false;
 
         switch ($header->typeCode) {
             case BinlogV4EventHeaderEntity::TYPE_FORMAT_DESCRIPTION_EVENT:
-                $entity = new FormatDescriptionEventEntity($header);
+                $entity = new FormatDescriptionEventEntity($header, $bodyBuffer, $checksum);
                 break;
             case BinlogV4EventHeaderEntity::TYPE_PREVIOUS_GTIDS_EVENT:
-                $entity = new PreviousGTIDSEventEntity($header);
+                $entity = new PreviousGTIDSEventEntity($header, $bodyBuffer, $checksum);
                 break;
             case BinlogV4EventHeaderEntity::TYPE_GTID_EVENT:
-                $entity = new GTIDEventEntity($header);
+                $entity = new GTIDEventEntity($header, $bodyBuffer, $checksum);
                 break;
             case BinlogV4EventHeaderEntity::TYPE_QUERY_EVENT:
-                $entity = new QueryEventEntity($header);
+                $entity = new QueryEventEntity($header, $bodyBuffer, $checksum);
                 break;
             case BinlogV4EventHeaderEntity::TYPE_TABLE_MAP_EVENT:
-                $entity = new TableMapEventEntity($header);
+                $entity = new TableMapEventEntity($header, $bodyBuffer, $checksum);
                 break;
             case BinlogV4EventHeaderEntity::TYPE_WRITE_ROWS_EVENT_V0:
-                $entity = new RowsEventEntity($header);
+                $entity = new RowsEventEntity($header, $bodyBuffer, $checksum);
                 $entity->version = RowsEventEntity::VERSION_0;
                 $entity->method = RowsEventEntity::TYPE_WRITE;
                 break;
             case BinlogV4EventHeaderEntity::TYPE_UPDATE_ROWS_EVENT_V0:
-                $entity = new RowsEventEntity($header);
+                $entity = new RowsEventEntity($header, $bodyBuffer, $checksum);
                 $entity->version = RowsEventEntity::VERSION_0;
                 $entity->method = RowsEventEntity::TYPE_UPDATE;
                 break;
             case BinlogV4EventHeaderEntity::TYPE_DELETE_ROWS_EVENT_V0:
-                $entity = new RowsEventEntity($header);
+                $entity = new RowsEventEntity($header, $bodyBuffer, $checksum);
                 $entity->version = RowsEventEntity::VERSION_0;
                 $entity->method = RowsEventEntity::TYPE_DELETE;
                 break;
             case BinlogV4EventHeaderEntity::TYPE_WRITE_ROWS_EVENT_V1:
-                $entity = new RowsEventEntity($header);
+                $entity = new RowsEventEntity($header, $bodyBuffer, $checksum);
                 $entity->version = RowsEventEntity::VERSION_1;
                 $entity->method = RowsEventEntity::TYPE_WRITE;
                 break;
             case BinlogV4EventHeaderEntity::TYPE_UPDATE_ROWS_EVENT_V1:
-                $entity = new RowsEventEntity($header);
+                $entity = new RowsEventEntity($header, $bodyBuffer, $checksum);
                 $entity->version = RowsEventEntity::VERSION_1;
                 $entity->method = RowsEventEntity::TYPE_UPDATE;
                 break;
             case BinlogV4EventHeaderEntity::TYPE_DELETE_ROWS_EVENT_V1:
-                $entity = new RowsEventEntity($header);
+                $entity = new RowsEventEntity($header, $bodyBuffer, $checksum);
                 $entity->version = RowsEventEntity::VERSION_1;
                 $entity->method = RowsEventEntity::TYPE_DELETE;
                 break;
             case BinlogV4EventHeaderEntity::TYPE_WRITE_ROWS_EVENT_V2:
-                $entity = new RowsEventEntity($header);
+                $entity = new RowsEventEntity($header, $bodyBuffer, $checksum);
                 $entity->version = RowsEventEntity::VERSION_2;
                 $entity->method = RowsEventEntity::TYPE_WRITE;
                 break;
             case BinlogV4EventHeaderEntity::TYPE_UPDATE_ROWS_EVENT_V2:
-                $entity = new RowsEventEntity($header);
+                $entity = new RowsEventEntity($header, $bodyBuffer, $checksum);
                 $entity->version = RowsEventEntity::VERSION_2;
                 $entity->method = RowsEventEntity::TYPE_UPDATE;
                 break;
             case BinlogV4EventHeaderEntity::TYPE_DELETE_ROWS_EVENT_V2:
-                $entity = new RowsEventEntity($header);
+                $entity = new RowsEventEntity($header, $bodyBuffer, $checksum);
                 $entity->version = RowsEventEntity::VERSION_2;
                 $entity->method = RowsEventEntity::TYPE_DELETE;
                 break;
             case BinlogV4EventHeaderEntity::TYPE_XID_EVENT:
-                $entity = new XIDEventEntity($header);
+                $entity = new XIDEventEntity($header, $bodyBuffer, $checksum);
                 break;
 
             case BinlogV4EventHeaderEntity::TYPE_START_EVENT_V3:
@@ -199,18 +173,32 @@ abstract class BaseBinlogV4EventEntity
 
             case BinlogV4EventHeaderEntity::TYPE_ANONYMOUS_GTID_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_USER_VAR_EVENT:
-                $reader->getLogger()->error("Unknown Event Type", ['header' => $header]);
+                BREnv::getLogger()->error("Unknown Event Type", ['header' => $header]);
                 throw new Exception("Unknown Type " . $header->typeCode . '(0x' . dechex($header->typeCode) . ')');
             case BinlogV4EventHeaderEntity::TYPE_IGNORABLE_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_UNKNOWN_EVENT:
-                $entity = new IgnoredEventEntity($header);
+                $entity = new IgnoredEventEntity($header, $bodyBuffer, $checksum);
                 break;
             default:
-                $reader->getLogger()->error("Unknown Event Type: 0x" . dechex($header->typeCode), ['type code' => $header->typeCode]);
+                BREnv::getLogger()->error("Unknown Event Type: 0x" . dechex($header->typeCode), ['type code' => $header->typeCode]);
                 return false;
         }
-        $entity->readFromBinlogStream($reader);
-        $entity->tryReadChecksum($reader);
+        $entity->parseBodyBuffer();
+
+        if ($entity->header->typeCode == BinlogV4EventHeaderEntity::TYPE_FORMAT_DESCRIPTION_EVENT) {
+            self::$currentFormatDescriptionEventEntity = $entity;
+        } elseif ($entity->header->typeCode == BinlogV4EventHeaderEntity::TYPE_TABLE_MAP_EVENT) {
+            self::$tableMap[$entity->tableId] = $entity;
+        }
         return $entity;
     }
+
+    /**
+     * @var FormatDescriptionEventEntity
+     */
+    public static $currentFormatDescriptionEventEntity;
+    /**
+     * @var TableMapEventEntity[]
+     */
+    public static $tableMap = [];
 }

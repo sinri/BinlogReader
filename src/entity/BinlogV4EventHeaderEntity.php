@@ -5,7 +5,7 @@ namespace sinri\BinlogReader\entity;
 
 
 use Exception;
-use sinri\BinlogReader\BinlogReader;
+use sinri\BinlogReader\BRByteBuffer;
 
 class BinlogV4EventHeaderEntity
 {
@@ -93,34 +93,35 @@ class BinlogV4EventHeaderEntity
     public $flags;
 
     /**
-     * @param BinlogReader $reader
-     * @return BinlogV4EventHeaderEntity
+     * BinlogV4EventHeaderEntity constructor.
+     * @param BRByteBuffer $headerBuffer
      * @throws Exception
      */
-    public function readFromBinlogStream($reader){
-        $this->timestamp = $reader->readNumber(4);
-        $this->typeCode = $reader->readNumber(1);
-        $this->serverId = $reader->readNumber(4);
-        $this->eventLength = $reader->readNumber(4);
-        $this->nextPosition = $reader->readNumber(4);
-        $this->flags = $reader->readNumber(2);
-
-        return $this;
+    public function __construct($headerBuffer)
+    {
+        $this->timestamp = $headerBuffer->readNumberWithSomeBytesLE(0, 4);
+        $this->typeCode = $headerBuffer->readNumberWithSomeBytesLE(4, 1);
+        $this->serverId = $headerBuffer->readNumberWithSomeBytesLE(5, 4);
+        $this->eventLength = $headerBuffer->readNumberWithSomeBytesLE(9, 4);
+        $this->nextPosition = $headerBuffer->readNumberWithSomeBytesLE(13, 4);
+        $this->flags = $headerBuffer->readNumberWithSomeBytesLE(17, 2);
     }
 
-    public function getTypeName(){
+    public function getTypeName()
+    {
         return self::$typeNameDictionary[$this->typeCode];
     }
 
-    public static function parseTypeName($typeCode){
+    public static function parseTypeName($typeCode)
+    {
         return self::$typeNameDictionary[$typeCode];
     }
 
     public function __toString()
     {
-        return "Timestamp: ".$this->timestamp.' ('.date('Y-m-d H:i:s',$this->timestamp).') '
-            ."Type: 0x".str_pad(dechex($this->typeCode),2,'0',STR_PAD_LEFT).' '.$this->getTypeName().PHP_EOL
-            ."Server ID: ".$this->serverId." Event Length: ".$this->eventLength." Next Position: ".$this->nextPosition.PHP_EOL
-            ."Flags: 0x".str_pad(dechex($this->typeCode),4,'0',STR_PAD_LEFT);
+        return "Timestamp: " . $this->timestamp . ' (' . date('Y-m-d H:i:s', $this->timestamp) . ') '
+            . "Type: 0x" . str_pad(dechex($this->typeCode), 2, '0', STR_PAD_LEFT) . ' ' . $this->getTypeName() . PHP_EOL
+            . "Server ID: " . $this->serverId . " Event Length: " . $this->eventLength . " Next Position: " . $this->nextPosition . PHP_EOL
+            . "Flags: 0x" . str_pad(dechex($this->typeCode), 4, '0', STR_PAD_LEFT);
     }
 }

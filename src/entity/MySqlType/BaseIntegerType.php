@@ -7,10 +7,16 @@ namespace sinri\BinlogReader\entity\MySqlType;
 abstract class BaseIntegerType extends BaseType
 {
     /**
+     * @return int
+     */
+    abstract protected function getByteCount();
+
+    /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = null)
+    public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
-        return $reader->readNumber($this->getValueSize($meta));
+        $outputLength = $this->getByteCount();
+        return $buffer->readNumberWithSomeBytesLE(0, $outputLength);
     }
 }

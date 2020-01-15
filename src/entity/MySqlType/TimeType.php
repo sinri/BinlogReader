@@ -34,35 +34,27 @@ class TimeType extends MixedBufferType
         $this->microSeconds=0;
     }
 
-    protected function read($reader)
+    public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
-        if($this->version==self::VERSION_BEFORE_5_6_4) {
-            parent::read($reader);
-        }else{
-            $this->size=3;
-            if($this->fsp>=5){
-                $this->size+=3;
-            }elseif($this->fsp>=3){
-                $this->size+=2;
-            }elseif($this->fsp>0){
-                $this->size+=1;
+        if ($this->version == self::VERSION_BEFORE_5_6_4) {
+            parent::parseValue($metaBuffer, $buffer, $outputLength);
+        } else {
+            $this->fsp = $metaBuffer->readNumberWithSomeBytesLE(0, 1);
+
+            $this->lengthByteCount = 0;
+            $this->valueByteCount = 3;
+            if ($this->fsp >= 5) {
+                $this->valueByteCount += 3;
+            } elseif ($this->fsp >= 3) {
+                $this->valueByteCount += 2;
+            } elseif ($this->fsp > 0) {
+                $this->valueByteCount += 1;
             }
 
-            $this->buffer=$reader->readByteBuffer($this->size);
+            $this->contentByteBuffer = $buffer->getSubByteBuffer($this->lengthByteCount, $this->valueByteCount);
+            $outputLength = $this->valueByteCount + $this->lengthByteCount;
         }
-    }
 
-    /**
-     * @inheritDoc
-     */
-    function readValueFromStream($reader, $meta = null)
-    {
-        if ($this->size === null) {
-            $this->read($reader);
-        }
-        if ($this->version == self::VERSION_AS_OF_5_6_4) {
-            $this->fsp = $meta;
-        }
         if ($this->version == self::VERSION_BEFORE_5_6_4) {
             if ($this->readByteInBuffer(0) > 0) {
                 $this->isNegative = ($this->readByteInBuffer(1, 0) == 1);

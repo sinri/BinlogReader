@@ -4,6 +4,7 @@
 namespace sinri\BinlogReader\entity\MySqlType;
 
 
+use sinri\BinlogReader\BREnv;
 use sinri\BinlogReader\BRKit;
 
 class DateTimeType extends DateType
@@ -28,57 +29,47 @@ class DateTimeType extends DateType
         $this->isNegative=false;
     }
 
-    protected function read($reader)
+    public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
-        if($this->version==self::VERSION_BEFORE_5_6_4) {
-            parent::read($reader);
-        }else{
-            $this->size=5;
-            if($this->fsp>=5){
-                $this->size+=3;
-            }elseif($this->fsp>=3){
-                $this->size+=2;
-            }elseif($this->fsp>0){
-                $this->size+=1;
+        if ($this->version == self::VERSION_BEFORE_5_6_4) {
+            parent::parseValue($metaBuffer, $buffer, $outputLength);
+        } else {
+            $this->fsp = $metaBuffer->readNumberWithSomeBytesLE(0, 1);
+            $this->lengthByteCount = 0;
+            $this->valueByteCount = 5;
+            if ($this->fsp >= 5) {
+                $this->valueByteCount += 3;
+            } elseif ($this->fsp >= 3) {
+                $this->valueByteCount += 2;
+            } elseif ($this->fsp > 0) {
+                $this->valueByteCount += 1;
             }
 
-            $this->buffer=$reader->readByteBuffer($this->size);
+            $this->contentByteBuffer = $buffer->getSubByteBuffer($this->lengthByteCount, $this->valueByteCount);
+            $outputLength = $this->valueByteCount + $this->lengthByteCount;
         }
+
+        BREnv::getLogger()->debug("BUFFER: " . $this->contentByteBuffer->showAsInlineBinary());
+
+        return ($this->isNegative ? '-' : '') . $this->makeDateString() . ' ' . $this->makeTimeString();
     }
 
-    /**
-     * @inheritDoc
-     */
-    function readValueFromStream($reader, $meta = null)
+    protected function makeDateString()
     {
-        if ($this->version == self::VERSION_AS_OF_5_6_4) {
-            $this->fsp = $meta;
-        }
+        $this->isNegative = (($this->readByteInBuffer(0) & 0b10000000) >> 7 == 0); // 1
+        $yearMonth17bits = ((($this->readByteInBuffer(0) & 0b01111111)) << 10)
+            + ($this->readByteInBuffer(1) << 2)
+            + (($this->readByteInBuffer(2) & 0b11000000) >> 6);// year*13+month, 7+8+2
+        $this->year = floor($yearMonth17bits / 13);
+        $this->month = $yearMonth17bits % 13;
+        $this->day = ($this->readByteInBuffer(2) & 0b00111110) >> 1;// 5
 
-        if ($this->size === null) {
-            $this->read($reader);
-        }
-
-        $reader->getLogger()->debug("BUFFER: " . BRKit::binInlineNumbers($this->buffer));
-
-        return ($this->isNegative?'-':'').$this->makeDateString().' '.$this->makeTimeString();
+        return ($this->isNegative ? 'BC' : 'AD') . $this->year . '-' . ($this->month < 10 ? '0' : '') . $this->month . '-' . ($this->day < 10 ? '0' : '') . $this->day;
     }
 
-    protected function makeDateString(){
-        $this->isNegative=(($this->readByteInBuffer(0) & 0b10000000)>>7 == 0); // 1
-        $yearMonth17bits=((($this->readByteInBuffer(0) & 0b01111111))<<10)
-            +($this->readByteInBuffer(1)<<2)
-            +(($this->readByteInBuffer(2) & 0b11000000)>>6)
-            ;// year*13+month, 7+8+2
-        $this->year=floor($yearMonth17bits/13);
-        $this->month=$yearMonth17bits%13;
-        $this->day=($this->readByteInBuffer(2) & 0b00111110)>>1;// 5
-
-        return ($this->isNegative?'BC':'AD').$this->year.'-'.($this->month<10?'0':'').$this->month.'-'.($this->day<10?'0':'').$this->day;
-    }
-
-    public function makeTimeString(){
-        if($this->version==self::VERSION_BEFORE_5_6_4) {
+    public function makeTimeString()
+    {
+        if ($this->version == self::VERSION_BEFORE_5_6_4) {
             $this->hour = $this->readByteInBuffer(4);
             $this->minute = $this->readByteInBuffer(5);
             $this->second = $this->readByteInBuffer(6);
@@ -112,5 +103,4 @@ class DateTimeType extends DateType
             . ($this->second < 10 ? '0' : '') . $this->second
             . ($this->microSecond > 0 ? (' ' . str_pad($this->microSecond, 3, '0', STR_PAD_LEFT)) : '');
     }
-
 }

@@ -10,17 +10,10 @@ class FloatType extends BaseType
     /**
      * @inheritDoc
      */
-    public function getValueSize($meta = null)
+    public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
-        return 4;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    function readValueFromStream($reader, $meta = null)
-    {
-        $number = $reader->readNumber($this->getValueSize($meta));
+        $outputLength = 4;
+        $number = $buffer->readNumberWithSomeBytesLE(0, $outputLength);
         return unpack('f', pack('i', $number));
     }
 }

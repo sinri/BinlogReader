@@ -10,19 +10,10 @@ class DoubleType extends BaseType
     /**
      * @inheritDoc
      */
-    public function getValueSize($meta = null)
+    public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
-        return 8;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    function readValueFromStream($reader, $meta = null)
-    {
-        $number = $reader->readNumber($this->getValueSize($meta));
-        $pack = unpack('d', pack('q', $number));
-        //var_dump($pack);
-        return $pack[1];
+        $outputLength = 8;
+        $number = $buffer->readNumberWithSomeBytesLE(0, $outputLength);
+        return unpack('d', pack('q', $number));
     }
 }

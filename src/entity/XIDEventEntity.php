@@ -4,11 +4,13 @@
 namespace sinri\BinlogReader\entity;
 
 
-class XIDEventEntity extends BaseBinlogV4EventEntity
+class XIDEventEntity extends BaseEventEntity
 {
+    public $xid;
 
-    protected $xid;
-
+    /**
+     * @inheritDoc
+     */
     public function getHumanReadableDescription()
     {
         return 'COMMIT -> XID: ' . $this->xid;
@@ -17,8 +19,8 @@ class XIDEventEntity extends BaseBinlogV4EventEntity
     /**
      * @inheritDoc
      */
-    public function readFromBinlogStream($reader)
+    public function parseBodyBuffer()
     {
-        $this->xid = $reader->readNumber(8);
+        $this->xid = $this->bodyBuffer->readNumberWithSomeBytesLE(0, 8);//$reader->readNumber(8);
     }
 }

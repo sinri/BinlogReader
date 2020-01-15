@@ -5,53 +5,36 @@ namespace sinri\BinlogReader\entity\MySqlType;
 
 
 use Exception;
-use sinri\ark\core\ArkHelper;
-use sinri\BinlogReader\BinlogReader;
+use sinri\BinlogReader\BRByteBuffer;
+use sinri\BinlogReader\BREnv;
 
 class MixedBufferType extends BaseType
 {
-
-    protected $size=null;
-    protected $buffer=null;
+    protected $lengthByteCount;
+    protected $valueByteCount;
+    /**
+     * @var BRByteBuffer
+     */
+    protected $contentByteBuffer;
 
     /**
-     * @param BinlogReader $reader
-     * @throws Exception
+     * @inheritDoc
      */
-    protected function read($reader){
-        $this->size=$reader->readLenencInt();
-        $this->buffer=$reader->readByteBuffer($this->size);
-    }
-
-    /**
-     * @param BinlogReader[] $meta [reader]
-     * @return int
-     * @throws Exception
-     */
-    public function getValueSize($meta = null)
+    public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
-        if ($this->size === null) {
-            $reader = $meta[0];
-            $this->read($reader);
-        }
-        return $this->size;
+        $this->valueByteCount = $buffer->readLenencInt(0, $this->lengthByteCount);
+        $this->contentByteBuffer = $buffer->getSubByteBuffer($this->lengthByteCount, $this->valueByteCount);
+        $outputLength = $this->valueByteCount + $this->lengthByteCount;
+        return $this->contentByteBuffer;
     }
 
-    /**
-     * @param BinlogReader $reader
-     * @param array $meta
-     * @return string
-     * @throws Exception
-     */
-    function readValueFromStream($reader, $meta = null)
+    public final function readByteInBuffer($index, $default = 0)
     {
-        if ($this->size === null) {
-            $this->read($reader);
+        try {
+            return $this->contentByteBuffer->readNumberWithSomeBytesLE($index, 1);
+        } catch (Exception $exception) {
+            BREnv::getLogger()->warning(__METHOD__ . '@' . __LINE__ . ' use default value: ' . $exception->getMessage());
+            return $default;
         }
-        return $this->buffer;
-    }
-
-    public final function readByteInBuffer($index,$default=0){
-        return ArkHelper::readTarget($this->buffer,[$index],$default);
     }
 }

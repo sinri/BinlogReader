@@ -13,20 +13,18 @@ class DateType extends MixedBufferType
     /**
      * @inheritDoc
      */
-    function readValueFromStream($reader, $meta = null)
+    public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
-        if ($this->size === null) {
-            $this->read($reader);
-        }
+        parent::parseValue($metaBuffer, $buffer, $outputLength);
+
+        $this->year = $this->contentByteBuffer->readNumberWithSomeBytesBE(0, 2);
+        $this->month = $this->contentByteBuffer->readNumberWithSomeBytesBE(2, 1);
+        $this->day = $this->contentByteBuffer->readNumberWithSomeBytesBE(3, 1);
 
         return $this->makeDateString();
     }
 
     protected function makeDateString(){
-        $this->year=($this->readByteInBuffer(0)<<8)+$this->readByteInBuffer(1);
-        $this->month=$this->readByteInBuffer(2);
-        $this->day=$this->readByteInBuffer(3);
-
         return $this->year.'-'.($this->month<10?'0':'').$this->month.'-'.($this->day<10?'0':'').$this->day;
     }
 }

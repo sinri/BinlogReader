@@ -3,26 +3,6 @@
 
 namespace sinri\BinlogReader\entity;
 
-use Exception;
-use sinri\ark\core\ArkHelper;
-use sinri\BinlogReader\BinlogReader;
-use sinri\BinlogReader\entity\MySqlType\BlobType;
-use sinri\BinlogReader\entity\MySqlType\DateTimeType;
-use sinri\BinlogReader\entity\MySqlType\DateType;
-use sinri\BinlogReader\entity\MySqlType\DecimalType;
-use sinri\BinlogReader\entity\MySqlType\DoubleType;
-use sinri\BinlogReader\entity\MySqlType\FloatType;
-use sinri\BinlogReader\entity\MySqlType\Int24Type;
-use sinri\BinlogReader\entity\MySqlType\LongIntType;
-use sinri\BinlogReader\entity\MySqlType\LongLongIntType;
-use sinri\BinlogReader\entity\MySqlType\ShortIntType;
-use sinri\BinlogReader\entity\MySqlType\StringType;
-use sinri\BinlogReader\entity\MySqlType\TimestampType;
-use sinri\BinlogReader\entity\MySqlType\TimeType;
-use sinri\BinlogReader\entity\MySqlType\TinyIntType;
-use sinri\BinlogReader\entity\MySqlType\VarcharType;
-use sinri\BinlogReader\entity\MySqlType\YearType;
-
 /**
  * Class TableColumnTypeProtocol
  * @package sinri\BinlogReader\entity
@@ -126,83 +106,6 @@ class TableColumnTypeProtocol
                 return 'GEOMETRY';
             default:
                 return 'UNKNOWN';
-        }
-    }
-
-    /**
-     * @param BinlogReader $reader
-     * @param int $type
-     * @param int[] $metaBuffer
-     * @return mixed
-     * @throws Exception
-     */
-    public static function readValueByType($reader,$type,$metaBuffer=[])
-    {
-//        $reader->getLogger()->debug(__METHOD__,['type'=>$type,'meta'=>$metaBuffer]);
-        // directly read form stream
-        switch ($type) {
-            case self::Protocol_MYSQL_TYPE_NEWDECIMAL:
-            case self::Protocol_MYSQL_TYPE_DECIMAL:
-                // TODO implement the decimal type
-//                return (new MixedBufferType())->readValueFromStream($reader,[
-//                    ArkHelper::readTarget($metaBuffer,[0],10),//[1,65]
-//                    ArkHelper::readTarget($metaBuffer,[1],0),//[0,30] and < M
-//                ]);
-                return (new DecimalType())->readValueFromStream($reader,[
-                    ArkHelper::readTarget($metaBuffer,[0],10),//[1,65]
-                    ArkHelper::readTarget($metaBuffer,[1],0),//[0,30] and < M
-                ]);
-            case self::Protocol_MYSQL_TYPE_TINY:
-                return (new TinyIntType())->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_SHORT:
-                return (new ShortIntType())->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_LONG:
-
-                return (new LongIntType())->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_FLOAT:
-                return (new FloatType())->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_DOUBLE:
-                return (new DoubleType())->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_TIMESTAMP2:
-            case self::Protocol_MYSQL_TYPE_TIMESTAMP:
-                return (new TimestampType($reader->getBinlogVersion()))->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_LONGLONG:
-                return (new LongLongIntType())->readValueFromStream($reader);
-            case self::Protocol_MYSQL_TYPE_INT24:
-                return (new Int24Type())->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_NEWDATE:
-            case self::Protocol_MYSQL_TYPE_DATE:
-                return (new DateType())->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_TIME2:
-            case self::Protocol_MYSQL_TYPE_TIME:
-                return (new TimeType($reader->getBinlogVersion()))->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_DATETIME2:
-            case self::Protocol_MYSQL_TYPE_DATETIME:
-                return (new DateTimeType($reader->getBinlogVersion()))->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_YEAR:
-                return (new YearType())->readValueFromStream($reader);
-            case self::Protocol_MYSQL_TYPE_ENUM:
-            case self::Protocol_MYSQL_TYPE_SET:
-            case self::Protocol_MYSQL_TYPE_TINY_BLOB:
-            case self::Protocol_MYSQL_TYPE_MEDIUM_BLOB:
-            case self::Protocol_MYSQL_TYPE_LONG_BLOB:
-            case self::Protocol_MYSQL_TYPE_BLOB:
-            case self::Protocol_MYSQL_TYPE_GEOMETRY:
-            case self::Protocol_MYSQL_TYPE_BIT:
-                return (new BlobType())->readValueFromStream($reader, $metaBuffer);
-            //return (new MixedBufferType())->readValueFromStream($reader,$metaBuffer);
-            case self::Protocol_MYSQL_TYPE_VARCHAR:
-            case self::Protocol_MYSQL_TYPE_VAR_STRING:
-                $reader->getLogger()->debug(__METHOD__, ['type' => $type, 'meta' => $metaBuffer]);
-                return (new VarcharType(3))->readValueFromStream($reader, $metaBuffer);
-            case self::Protocol_MYSQL_TYPE_STRING:
-                return (new StringType())->readValueFromStream($reader);
-            case self::Protocol_MYSQL_TYPE_NULL:
-                // stored in the NULL-bitmap only
-                return null;
-            default:
-                // unknown type here
-                return false;
         }
     }
 }

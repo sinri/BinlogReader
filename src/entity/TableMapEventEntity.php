@@ -4,11 +4,11 @@
 namespace sinri\BinlogReader\entity;
 
 
+use sinri\BinlogReader\BRByteBuffer;
 use sinri\BinlogReader\BRKit;
 
-class TableMapEventEntity extends BaseBinlogV4EventEntity
+class TableMapEventEntity extends BaseEventEntity
 {
-
     public $tableId;
     public $flags;
 
@@ -16,9 +16,12 @@ class TableMapEventEntity extends BaseBinlogV4EventEntity
     public $schemaName;
     public $tableNameLength;
     public $tableName;
+    /**
+     * @var int
+     */
     public $columnCount;
     /**
-     * @var array [len=column_count] array of column definitions, one byte per field type
+     * @var int[] [len=column_count] array of column definitions, one byte per field type
      * @see https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
      */
     public $columnTypeDef;
@@ -26,56 +29,88 @@ class TableMapEventEntity extends BaseBinlogV4EventEntity
      * @var string array of metainfo per column, length is the overall length of the metainfo-array in bytes, the length of each metainfo field is dependent on the columns field type
      */
     public $columnMetaDef;
+    /**
+     * @var BRByteBuffer
+     */
     public $nullBitmap;
+
+    protected $postHeaderLen;
+
+    public function __construct($header, $bodyBuffer, $checksum)
+    {
+        parent::__construct($header, $bodyBuffer, $checksum);
+        $this->postHeaderLen = (self::$currentFormatDescriptionEventEntity->postHeaderLengthForAllEventTypes[$header->typeCode]);
+    }
 
     /**
      * @inheritDoc
      */
-    public function readFromBinlogStream($reader)
+    public function getHumanReadableDescription()
     {
-//        $this->debugShowBody($reader);
-//        return;
+        $s = "Table ID: " . $this->tableId . " " . $this->schemaName . ' . ' . $this->tableName . PHP_EOL
+            . "Flags: " . $this->flags . " Column Count: " . $this->columnCount . PHP_EOL;
+        $s .= "Table Column Types: " . PHP_EOL;
+        for ($i = 0; $i < $this->columnCount; $i++) {
+            $s .= "[$i] " . BRKit::hexOneNumber($this->columnTypeDef[$i])
+                . ' ' . TableColumnTypeProtocol::getTypeName($this->columnTypeDef[$i])
+                . (isset($this->columnMetaDef[$i]) ? (' Meta: ' . ($this->columnMetaDef[$i])) : '')
+                . PHP_EOL;
 
-        /*
-         * 000000	| 4d 00 00 00 00 00|01 00|05→72
-         * 000010	| 6f 6d 65 6f 00|20→69 6e 76 65
-         * 000020	| 6e 74 6f 72 79 5f 72 65 73 65
-         * 000030	| 72 76 65 5f 69 6e 63 72 65 6d
-         * 000040	| 65 6e 74 5f 73 74 65 70 00|04|
-         * 000050	| 03 12 12 12|03|00 00 00|0e|a7
-         * 000060	| 35 93 86
-         */
-
-        $post_header_len=$reader->getFormatDescriptionEventEntity()->postHeaderLengthForAllEventTypes[$this->header->typeCode];
-        //var_dump($post_header_len);
-        if($post_header_len==6){
-            $this->tableId=$reader->readNumber(4);
-        }else{
-            $this->tableId=$reader->readNumber(6);
         }
-        $this->flags=$reader->readNumber(2);
+        //$s.="Column Meta Def: ".BRKit::hexInlineNumbers($this->columnMetaDef).PHP_EOL;
+        $s .= "Null Bit Map: " . $this->nullBitmap->showAsInlineBinary();
+        return $s;
+    }
 
-        $this->schemaNameLength=$reader->readNumber(1);
-        $this->schemaName=$reader->readString($this->schemaNameLength);
-        $reader->readNumber(1);// 0x00
-        $this->tableNameLength=$reader->readNumber(1);
-        $this->tableName=$reader->readString($this->tableNameLength);
-        $reader->readNumber(1);// 0x00
+    /**
+     * @inheritDoc
+     */
+    public function parseBodyBuffer()
+    {
+        // $post_header_len -> $this->postHeaderLen
+        //$post_header_len=$this->getPostHeaderLen();//$reader->getFormatDescriptionEventEntity()->postHeaderLengthForAllEventTypes[$this->header->typeCode];
+        //var_dump($post_header_len);
+        $offset = 0;
 
-        $this->columnCount=$reader->readLenencInt();
-        for($i=0;$i<$this->columnCount;$i++) {
-            $this->columnTypeDef[$i] = $reader->readNumber(1);
+        if ($this->postHeaderLen == 6) {
+            $this->tableId = $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 4);//$reader->readNumber(4);
+            $offset += 4;
+        } else {
+            $this->tableId = $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 6);//$reader->readNumber(6);
+            $offset += 6;
+        }
+        $this->flags = $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 2);//$reader->readNumber(2);
+        $offset += 2;
+
+        $this->schemaNameLength = $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 1);//$reader->readNumber(1);
+        $offset += 1;
+        $this->schemaName = $this->bodyBuffer->readString($offset, $this->schemaNameLength + 1);//$reader->readString($this->schemaNameLength);
+        //$reader->readNumber(1);// 0x00
+        $offset += $this->schemaNameLength + 1;
+        $this->tableNameLength = $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 1);//$reader->readNumber(1);
+        $offset += 1;
+        $this->tableName = $this->bodyBuffer->readString($offset, $this->tableNameLength + 1);//$reader->readString($this->tableNameLength);
+        //$reader->readNumber(1);// 0x00
+        $offset += $this->tableNameLength + 1;
+
+        $this->columnCount = $this->bodyBuffer->readLenencInt($offset, $tempLength);//$reader->readLenencInt();
+        $offset += $tempLength;
+        for ($i = 0; $i < $this->columnCount; $i++) {
+            $this->columnTypeDef[$i] = $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 1);//$reader->readNumber(1);
+            $offset += 1;
         }
 
         //$this->columnMetaDef=$reader->readLenencString();
-        $columnMetaDefBytes=$reader->readNumber(1);
+        //$columnMetaDefBytes=$reader->readNumber(1);
+        // TODO need to understand this byte
+        $offset += 1;
 //        for($i=0;$i<$columnMetaDefBytes;$i++){
 //            $this->columnMetaDef[]=$reader->readNumber(1);
 //        }
-        for($i=0;$i<$this->columnCount;$i++){
+        for ($i = 0; $i < $this->columnCount; $i++) {
             // TODO the length definition @see https://dev.mysql.com/doc/internals/en/table-map-event.html
             // not fulfilled yet!
-            switch ($this->columnTypeDef[$i]){
+            switch ($this->columnTypeDef[$i]) {
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_STRING:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_VAR_STRING:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_VARCHAR:
@@ -83,14 +118,16 @@ class TableMapEventEntity extends BaseBinlogV4EventEntity
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_NEWDECIMAL:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_ENUM:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_SET:
-                    $this->columnMetaDef[$i]=$reader->readNumber(2);
+                    $this->columnMetaDef[$i] = $this->bodyBuffer->getSubByteBuffer($offset, 2);//$reader->readNumber(2);
+                    $offset += 2;
                     break;
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_BLOB:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_DOUBLE:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_FLOAT:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_DATETIME2:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_TIMESTAMP2:
-                    $this->columnMetaDef[$i]=$reader->readNumber(1);
+                    $this->columnMetaDef[$i] = $this->bodyBuffer->getSubByteBuffer($offset, 1);//$reader->readNumber(1);
+                    $offset += 1;
                     break;
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_BIT:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_DATE:
@@ -103,33 +140,15 @@ class TableMapEventEntity extends BaseBinlogV4EventEntity
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_LONG:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_LONGLONG:
                 default:
-                    $this->columnMetaDef[$i]=null;
+                    $this->columnMetaDef[$i] = null;
             }
 
         }
 
 
-        $nullBitmapLength=floor(($this->columnCount + 7) / 8);
+        $nullBitmapLength = ($this->columnCount + 7) >> 3;
 //        $this->nullBitmap=$reader->readString($nullBitmapLength);
-        $this->nullBitmap=$reader->readByteBuffer($nullBitmapLength);
-
-        //var_dump($this);
-    }
-
-    public function getHumanReadableDescription()
-    {
-        $s= "Table ID: ".$this->tableId." ".$this->schemaName.' . '.$this->tableName.PHP_EOL
-            ."Flags: ".$this->flags." Column Count: ".$this->columnCount.PHP_EOL;
-        $s.="Table Column Types: ".PHP_EOL;
-        for($i=0;$i<$this->columnCount;$i++){
-            $s .= "[$i] " . BRKit::hexOneNumber($this->columnTypeDef[$i])
-                . ' ' . TableColumnTypeProtocol::getTypeName($this->columnTypeDef[$i])
-                . (isset($this->columnMetaDef[$i]) ? (' Meta: ' . json_encode($this->columnMetaDef[$i])) : '')
-                . PHP_EOL;
-
-        }
-        //$s.="Column Meta Def: ".BRKit::hexInlineNumbers($this->columnMetaDef).PHP_EOL;
-        $s.="Null Bit Map: ".BRKit::binInlineNumbers($this->nullBitmap);
-        return $s;
+        $this->nullBitmap = $this->bodyBuffer->getSubByteBuffer($offset, $nullBitmapLength);//$reader->readByteBuffer($nullBitmapLength);
+        $offset += $nullBitmapLength;
     }
 }

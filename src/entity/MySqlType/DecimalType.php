@@ -7,16 +7,30 @@ namespace sinri\BinlogReader\entity\MySqlType;
 use Exception;
 use sinri\ark\core\ArkHelper;
 
-/**
- * Class DecimalType
- * @package sinri\BinlogReader\entity\MySqlType
- * @see GitHub Repo mysql-server 5.6 /strings/decimal.c
- */
 class DecimalType extends BaseType
 {
-    const DIG_PER_DEC1=9;
 
-    protected static $dig2bytes=[0,1,1,2,2,3,3,4,4,4];
+    /**
+     * @inheritDoc
+     */
+//    protected function computeBytes($metaBuffer, $buffer = null)
+//    {
+//        return $this->getBinSizeForPrecisionAndScale($metaBuffer->readNumberWithSomeBytesLE(0,1), $metaBuffer->readNumberWithSomeBytesLE(1,1));
+//    }
+
+    /**
+     * @inheritDoc
+     */
+    public function parseValue($metaBuffer, $buffer, &$outputLength = null)
+    {
+        // TODO I do not clearly understand how decimal stored in binlog....
+        $outputLength = $this->getBinSizeForPrecisionAndScale($metaBuffer->readNumberWithSomeBytesLE(0, 1), $metaBuffer->readNumberWithSomeBytesLE(1, 1));
+        return $buffer->getSubByteBuffer(0, $outputLength);
+    }
+
+    const DIG_PER_DEC1 = 9;
+
+    protected static $dig2bytes = [0, 1, 1, 2, 2, 3, 3, 4, 4, 4];
 
     /**
      * @param $precision
@@ -24,7 +38,8 @@ class DecimalType extends BaseType
      * @return float|int|mixed
      * @throws Exception
      */
-    public function getBinSizeForPrecisionAndScale($precision,$scale){
+    public function getBinSizeForPrecisionAndScale($precision, $scale)
+    {
         $size_of_dec1=4; // when decimal_digit_t defined as dec1 actually as int32 in <decimal.h>
 
         $intg=$precision-$scale;
@@ -88,22 +103,5 @@ class DecimalType extends BaseType
                 // x.Y
             }
         }
-    }
-
-    /**
-     * @inheritDoc
-     * @throws Exception
-     */
-    public function getValueSize($meta = null)
-    {
-        return $this->getBinSizeForPrecisionAndScale($meta[0], $meta[1]);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    function readValueFromStream($reader, $meta = null)
-    {
-        return $this->readBufferFromStream($reader, $meta);
     }
 }

@@ -10,7 +10,7 @@ class ShortIntType extends BaseIntegerType
     /**
      * @inheritDoc
      */
-    public function getValueSize($meta = null)
+    protected function getByteCount()
     {
         return 2;
     }

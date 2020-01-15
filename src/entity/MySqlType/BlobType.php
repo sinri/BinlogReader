@@ -4,29 +4,17 @@
 namespace sinri\BinlogReader\entity\MySqlType;
 
 
-use Exception;
-
 class BlobType extends BaseType
 {
 
     /**
-     * @param array|int $meta
-     * @return array
+     * @inheritDoc
      */
-    public function getValueSize($meta = null)
+    public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
-        return $meta;
-    }
-
-    /**
-     * @param $reader
-     * @param array|int $meta bytes for size
-     * @return false|string
-     * @throws Exception
-     */
-    function readValueFromStream($reader, $meta = null)
-    {
-        $length = $reader->readNumber($meta);
-        return $reader->readString($length);
+        $lengthByteCount = $metaBuffer->readNumberWithSomeBytesLE(0);
+        $contentLength = $buffer->readNumberWithSomeBytesLE(0, $lengthByteCount);
+        $outputLength = $lengthByteCount + $contentLength;
+        return $buffer->readString($lengthByteCount, $contentLength);
     }
 }
