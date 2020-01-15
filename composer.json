@@ -14,6 +14,11 @@
       "sinri\\BinlogReader\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "sinri\\BinlogReader\\test\\": "test/"
+    }
+  },
   "require": {
     "sinri/ark-core": "~2.5",
     "ext-json": "*"
