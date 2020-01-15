@@ -93,12 +93,24 @@ class RowsEventEntity extends BaseEventEntity
             $s .= "Image for Row " . $rowIndex . PHP_EOL;
             //var_dump($this->rows[$rowIndex][0]);
             for ($i = 0; $i < count($this->rows[$rowIndex][0]); $i++) {
-                $s .= json_encode($this->rows[$rowIndex][0][$i]) . PHP_EOL;
+                $column = $this->rows[$rowIndex][0][$i];
+                $s .= $column['used_column_index'] . ": No." . $column['column_def_index'] . " defined column";
+                if ($column['is_null']) {
+                    $s .= ' [NULL]';
+                }
+                $s .= " Value: " . json_encode($column['value']) . PHP_EOL;
+                //$s .= json_encode($this->rows[$rowIndex][0][$i]) . PHP_EOL;
             }
             if (count($this->rows[$rowIndex]) > 1) {
                 $s .= 'Rows matched above conditions were updated to this:' . PHP_EOL;
                 for ($i = 0; $i < count($this->rows[$rowIndex][1]); $i++) {
-                    $s .= json_encode($this->rows[$rowIndex][1][$i]) . PHP_EOL;
+                    $column = $this->rows[$rowIndex][1][$i];
+                    $s .= $column['used_column_index'] . ": No." . $column['column_def_index'] . " defined column";
+                    if ($column['is_null']) {
+                        $s .= ' [NULL]';
+                    }
+                    $s .= " Value: " . json_encode($column['value']) . PHP_EOL;
+                    //$s .= json_encode($this->rows[$rowIndex][1][$i]) . PHP_EOL;
                 }
             }
         }
@@ -110,8 +122,7 @@ class RowsEventEntity extends BaseEventEntity
      */
     public function parseBodyBuffer()
     {
-        BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__, ['method' => $this->method, 'version' => $this->version]);
-
+        BREnv::getLogger()->info('method: ' . $this->method . ' version: ' . $this->version);
         BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__, ['next position' => $this->header->nextPosition]);
 
         $post_header_len = self::$currentFormatDescriptionEventEntity->postHeaderLengthForAllEventTypes[$this->header->typeCode];
@@ -214,7 +225,7 @@ class RowsEventEntity extends BaseEventEntity
 
             $this->rows[] = $row;
 
-            BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__);
+            //BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__);
         }
     }
 
@@ -258,42 +269,32 @@ class RowsEventEntity extends BaseEventEntity
             $row[$imageId - 1][] = $column;
         });
 
-//        BRKit::checkBitmap($nullValueBitmap->getBytesAsArray(), count($parsedColumnsForImage), function ($bit, $order) use ($imageId, $parsedColumnsForImage, &$row) {
-//            $parsedColumn = $parsedColumnsForImage[$order];
-//            //$reader->getLogger()->debug(__METHOD__.'@'.__LINE__,['parsed column'=>$parsedColumn]);
-//            //$reader->getLogger()->debug(__METHOD__.'@'.__LINE__,['bit'=>$bit,'order'=>$order]);
-//            $column = [
-//                'used_column_index' => $order,
-//                'column_def_index' => $parsedColumn['column_def_index'],
-//                'is_null' => false,
-//                'value' => null
-//            ];
-//            if ($bit == 1) {
-//                $column['is_null'] = true;
-//            }
-//            $row[$imageId-1][] = $column;
-//        });
-
-        //$reader->getLogger()->debug(__METHOD__.'@'.__LINE__,['row phrase 1'=>$row]);
-
         for ($i = 0; $i < count($row[$imageId - 1]); $i++) {
             BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__ . ' ----');
             $parsedColumn = $parsedColumnsForImage[$i];
-            BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__, ['parsed column' => $parsedColumn]);
+            //BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__, ['parsed column' => $parsedColumn]);
             if ($row[$imageId - 1][$i]['is_null'] === true) {
-                BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__, ["Column $i" => 'is null']);
+                BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__ . ' Declared as null but...', [
+                    "Column $i" => 'is null',
+                    'type' => $parsedColumn['column_type_def'],
+                    'meta' => $parsedColumn['column_meta']
+                ]);
                 continue;
             }
             // read value by column_type_def of parsed column
             $row[$imageId - 1][$i]['value'] = $this->bodyBuffer->readValueByType($parsedColumn['column_type_def'], $parsedColumn['column_meta'], $offset, $tempLength);
             $offset += $tempLength;
             //$row[$imageId - 1][$i]['value'] = TableColumnTypeProtocol::readValueByType($reader, $parsedColumn['column_type_def'], $parsedColumn['column_meta']);
-            BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__, ['value' => $row[$imageId - 1][$i]['value'], 'type' => $parsedColumn['column_type_def'], 'meta' => $parsedColumn['column_meta']]);
+            BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__, [
+                'value' => $row[$imageId - 1][$i]['value'],
+                'type' => $parsedColumn['column_type_def'],
+                'meta' => $parsedColumn['column_meta']
+            ]);
         }
 
-        for ($i = 0; $i < count($row[$imageId - 1]); $i++) {
-            BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__, ["Column $i" => $row[$imageId - 1][$i]]);
-        }
+//        for ($i = 0; $i < count($row[$imageId - 1]); $i++) {
+//            BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__, ["Column $i" => $row[$imageId - 1][$i]]);
+//        }
     }
 
     /**

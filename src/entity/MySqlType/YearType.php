@@ -12,6 +12,6 @@ class YearType extends BaseIntegerType
      */
     protected function getByteCount()
     {
-        return 2;
+        return 2;// maybe 1
     }
 }

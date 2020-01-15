@@ -32,7 +32,11 @@ class DateTimeType extends DateType
     public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
         if ($this->version == self::VERSION_BEFORE_5_6_4) {
-            parent::parseValue($metaBuffer, $buffer, $outputLength);
+            //parent::parseValue($metaBuffer, $buffer, $outputLength);
+            $this->lengthByteCount = 0;
+            $this->valueByteCount = 8;
+            $outputLength = $this->lengthByteCount + $this->valueByteCount;
+            $this->contentByteBuffer = $buffer->getSubByteBuffer(0, $outputLength);
         } else {
             $this->fsp = $metaBuffer->readNumberWithSomeBytesLE(0, 1);
             $this->lengthByteCount = 0;

@@ -54,19 +54,19 @@
             "time": "2019-11-01T11:05:21+00:00"
         },
         {
-            "name": "sinri/ark-core",
-            "version": "2.5",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/sinri/Ark-Core.git",
-                "reference": "4ac20b049e55fc6915d6a9d1c29d3b2bb8cdcd88"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/sinri/Ark-Core/zipball/4ac20b049e55fc6915d6a9d1c29d3b2bb8cdcd88",
-                "reference": "4ac20b049e55fc6915d6a9d1c29d3b2bb8cdcd88",
-                "shasum": ""
-            },
+          "name": "sinri/ark-core",
+          "version": "2.6.6",
+          "source": {
+            "type": "git",
+            "url": "https://github.com/sinri/Ark-Core.git",
+            "reference": "f573fed77a18cb58a9c58d80b9944a5f2e7c05aa"
+          },
+          "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/sinri/Ark-Core/zipball/f573fed77a18cb58a9c58d80b9944a5f2e7c05aa",
+            "reference": "f573fed77a18cb58a9c58d80b9944a5f2e7c05aa",
+            "shasum": ""
+          },
             "require": {
                 "ext-json": "*",
                 "psr/log": "~1.0"
@@ -88,7 +88,7 @@
                 }
             ],
             "description": "The core components of Ark 2",
-            "time": "2019-12-06T03:35:51+00:00"
+          "time": "2020-01-15T09:59:40+00:00"
         }
     ],
     "packages-dev": [],

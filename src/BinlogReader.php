@@ -6,6 +6,7 @@ namespace sinri\BinlogReader;
 
 use Exception;
 use sinri\ark\core\ArkHelper;
+use sinri\ark\core\ArkLoggerBufferForRepeatJobDebug;
 use sinri\BinlogReader\entity\BaseEventEntity;
 use sinri\BinlogReader\entity\BinlogV4EventHeaderEntity;
 
@@ -13,6 +14,9 @@ class BinlogReader
 {
     protected $binlogFile;
     protected $binlogFileHandler;
+
+    protected $parseStartTimestamp;
+    protected $parseEndTimestamp;
 
     protected $events;
 
@@ -42,9 +46,16 @@ class BinlogReader
      */
     public function parseToEntity()
     {
+        $this->parseStartTimestamp = microtime(true);
+
         // file head
         $magic_number_chars = fread($this->binlogFileHandler, 4);
         ArkHelper::quickNotEmptyAssert("Not a valid MySQL Binlog File Header", ($magic_number_chars !== "\xfe\x62\x69\6e"));
+
+        // logger buffer
+        $loggerBuffer = new ArkLoggerBufferForRepeatJobDebug(null, true, BREnv::getLogger());
+        BREnv::getLogger()->setBuffer($loggerBuffer);
+
         // events
         while (true) {
             $header = null;
@@ -52,7 +63,10 @@ class BinlogReader
             $checksum = null;
             try {
                 $currentFileOffset = ftell($this->binlogFileHandler);
-                BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__ . " Ready for next block", ['offset' => $currentFileOffset]);
+                BREnv::getLogger()->info("Ready for next block", ['offset' => $currentFileOffset]);
+
+                $this->showProgress("Reading Next Block");
+
                 $header = $this->readNextHeader();
                 if ($header === false) {
                     BREnv::getLogger()->info("Mo more bytes to parse, END");
@@ -66,9 +80,14 @@ class BinlogReader
                     $checksum = BRByteBuffer::pickFixedBuffer($this->binlogFileHandler, BREnv::checksumByteCount())->readNumberWithSomeBytesLE(0, 4);
                 }
 
+                $this->showProgress("Parsing Next Block");
+
                 $event = BaseEventEntity::parseNextEvent($header, $bodyBuffer, $checksum);
-                BREnv::getLogger()->info("Event: " . $event);
-                $this->events[] = $event;
+                BREnv::getLogger()->info("" . $event);
+                //$this->events[] = $event;
+
+                BREnv::getLogger()->sendCommandToBuffer(ArkLoggerBufferForRepeatJobDebug::COMMAND_REPORT_NORMAL);
+                $this->showProgress("Parsed This Block");
             } catch (Exception $exception) {
                 BREnv::getLogger()->error("ERROR WHILE READING: " . $exception->getMessage() . PHP_EOL . $exception->getTraceAsString());
 //                foreach ($exception->getTrace() as $trace){
@@ -77,9 +96,17 @@ class BinlogReader
                 BREnv::getLogger()->error("HEADER\t: " . PHP_EOL . $header);
                 BREnv::getLogger()->error("BODY\t: " . PHP_EOL . $bodyBuffer);
                 BREnv::getLogger()->error("CHECKSUM\t:" . $checksum);
+
+                BREnv::getLogger()->sendCommandToBuffer(ArkLoggerBufferForRepeatJobDebug::COMMAND_REPORT_ERROR);
+
+                $this->showProgress("Error in parsing this block");
                 break;
             }
         }
+
+        $this->parseEndTimestamp = microtime(true);
+
+        BREnv::getLogger()->setBuffer(null);
 
         return $this;
     }
@@ -106,6 +133,19 @@ class BinlogReader
             BREnv::getLogger()->warning(__METHOD__ . '@' . __LINE__ . ' ' . $exception->getMessage());
             return false;
         }
+    }
+
+    public function showProgress($message)
+    {
+        $offset = ftell($this->binlogFileHandler);
+        $whole = filesize($this->binlogFile);
+        $percent = number_format(100.0 * $offset / $whole, 2);
+
+        $currentTimestamp = microtime(true);
+        $cost = ($currentTimestamp - $this->parseStartTimestamp);
+        $predictMore = number_format(1.0 * $cost / $offset * ($whole - $offset), 2);
+
+        echo "\rCurrent Bytes: " . $offset . " ({$percent}%)\t Time Cost: {$cost}s\t Predict Ends in {$predictMore}s \t Message: " . $message;
     }
 
 }

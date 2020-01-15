@@ -150,10 +150,16 @@ abstract class BaseEventEntity
             case BinlogV4EventHeaderEntity::TYPE_XID_EVENT:
                 $entity = new XIDEventEntity($header, $bodyBuffer, $checksum);
                 break;
+            case BinlogV4EventHeaderEntity::TYPE_ROTATE_EVENT:
+                $entity = new RotateEventEntity($header, $bodyBuffer, $checksum);
+                break;
+            case BinlogV4EventHeaderEntity::TYPE_IGNORABLE_EVENT:
+            case BinlogV4EventHeaderEntity::TYPE_UNKNOWN_EVENT:
+                $entity = new IgnoredEventEntity($header, $bodyBuffer, $checksum);
+                break;
 
             case BinlogV4EventHeaderEntity::TYPE_START_EVENT_V3:
             case BinlogV4EventHeaderEntity::TYPE_STOP_EVENT:
-            case BinlogV4EventHeaderEntity::TYPE_ROTATE_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_INTVAR_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_LOAD_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_SLAVE_EVENT:
@@ -173,10 +179,8 @@ abstract class BaseEventEntity
 
             case BinlogV4EventHeaderEntity::TYPE_ANONYMOUS_GTID_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_USER_VAR_EVENT:
-                BREnv::getLogger()->error("Unknown Event Type", ['header' => $header]);
-                throw new Exception("Unknown Type " . $header->typeCode . '(0x' . dechex($header->typeCode) . ')');
-            case BinlogV4EventHeaderEntity::TYPE_IGNORABLE_EVENT:
-            case BinlogV4EventHeaderEntity::TYPE_UNKNOWN_EVENT:
+                BREnv::getLogger()->warning("Unsupported Event Type", ['header' => $header]);
+                //throw new Exception("Unknown Type " . $header->typeCode . '(0x' . dechex($header->typeCode) . ')');
                 $entity = new IgnoredEventEntity($header, $bodyBuffer, $checksum);
                 break;
             default:

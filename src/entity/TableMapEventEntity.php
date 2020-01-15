@@ -26,7 +26,7 @@ class TableMapEventEntity extends BaseEventEntity
      */
     public $columnTypeDef;
     /**
-     * @var string array of metainfo per column, length is the overall length of the metainfo-array in bytes, the length of each metainfo field is dependent on the columns field type
+     * @var BRByteBuffer[] array of metainfo per column, length is the overall length of the metainfo-array in bytes, the length of each metainfo field is dependent on the columns field type
      */
     public $columnMetaDef;
     /**
@@ -52,13 +52,13 @@ class TableMapEventEntity extends BaseEventEntity
         $s .= "Table Column Types: " . PHP_EOL;
         for ($i = 0; $i < $this->columnCount; $i++) {
             $s .= "[$i] " . BRKit::hexOneNumber($this->columnTypeDef[$i])
-                . ' ' . TableColumnTypeProtocol::getTypeName($this->columnTypeDef[$i])
-                . (isset($this->columnMetaDef[$i]) ? (' Meta: ' . ($this->columnMetaDef[$i])) : '')
+                . ':' . TableColumnTypeProtocol::getTypeName($this->columnTypeDef[$i])
+                . (isset($this->columnMetaDef[$i]) ? (' Meta: ' . $this->columnMetaDef[$i]->showAsInlineHexForNumberLE()) : '')
                 . PHP_EOL;
 
         }
         //$s.="Column Meta Def: ".BRKit::hexInlineNumbers($this->columnMetaDef).PHP_EOL;
-        $s .= "Null Bit Map: " . $this->nullBitmap->showAsInlineBinary();
+        $s .= "Null Bit Map: " . $this->nullBitmap->showAsBitmap($this->columnCount);
         return $s;
     }
 

@@ -40,17 +40,17 @@ class DecimalType extends BaseType
      */
     public function getBinSizeForPrecisionAndScale($precision, $scale)
     {
-        $size_of_dec1=4; // when decimal_digit_t defined as dec1 actually as int32 in <decimal.h>
+        $size_of_dec1 = 4; // when decimal_digit_t defined as dec1 actually as int32 in <decimal.h>
 
-        $intg=$precision-$scale;
-        $intg0=$intg/self::DIG_PER_DEC1;
-        $frac0=$scale/self::DIG_PER_DEC1;
-        $intg0x=$intg-$intg0*self::DIG_PER_DEC1;
-        $frac0x=$scale-$frac0*self::DIG_PER_DEC1;
+        $intg = $precision - $scale;
+        $intg0 = (int)floor($intg / self::DIG_PER_DEC1);
+        $frac0 = (int)floor($scale / self::DIG_PER_DEC1);
+        $intg0x = $intg - $intg0 * self::DIG_PER_DEC1;
+        $frac0x = $scale - $frac0 * self::DIG_PER_DEC1;
 
-        ArkHelper::quickNotEmptyAssert($scale>=0 && $precision>0 && $scale<$precision);
+        ArkHelper::quickNotEmptyAssert($scale >= 0 && $precision > 0 && $scale < $precision);
 
-        return $intg0*$size_of_dec1+self::$dig2bytes[$intg0x]+$frac0*$size_of_dec1+self::$dig2bytes[$frac0x];
+        return $intg0 * $size_of_dec1 + self::$dig2bytes[$intg0x] + $frac0 * $size_of_dec1 + self::$dig2bytes[$frac0x];
     }
 
     public function decimal2bin($decimal,$precision,$scale){
