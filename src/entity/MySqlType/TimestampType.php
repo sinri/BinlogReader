@@ -34,12 +34,14 @@ class TimestampType extends BaseType
      */
     public function parseValue($metaBuffer, $buffer, &$outputLength = null)
     {
+        // 0x5e (^),0x1f (^_),0xca (<CA>),0xbc (<BC>)
+
         if ($this->version === self::VERSION_BEFORE_5_6_4) {
             $outputLength = 4;
             return $buffer->readNumberWithSomeBytesLE(0, 4);
         } else {
             $this->fsp = $metaBuffer->readNumberWithSomeBytesLE(0, 1);
-            $outputLength = 5;
+            $outputLength = 4;
             if ($this->fsp >= 5) {
                 $outputLength += 3;
             } elseif ($this->fsp >= 3) {
@@ -48,8 +50,12 @@ class TimestampType extends BaseType
                 $outputLength += 1;
             }
 
-            $x = $buffer->readNumberWithSomeBytesBE(0, 5);
-            $y = $buffer->readNumberWithSomeBytesBE(5, $outputLength - 5);
+            $x = $buffer->readNumberWithSomeBytesBE(0, 4);
+            if ($outputLength > 4) {
+                $y = $buffer->readNumberWithSomeBytesBE(4, $outputLength - 4);
+            } else {
+                $y = 0;
+            }
             return $x . '.' . $y;
         }
     }
