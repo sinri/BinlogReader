@@ -112,7 +112,10 @@ class RowsEventEntity extends BaseEventEntity
     public function getHumanReadableDescription()
     {
         $s = "METHOD: " . $this->method . ' VERSION: ' . $this->version . PHP_EOL
-            . 'Table ID: ' . $this->tableId . ' Flag: ' . $this->flagsValue . PHP_EOL;
+            . 'Table ID: ' . $this->tableId . ' i.e. '
+            . self::getTableFromTableMap()->schemaName . '.' . self::getTableFromTableMap()->tableName
+            . PHP_EOL
+            . 'Flag: ' . $this->flagsValue . PHP_EOL;
         foreach ($this->parsedFlags as $parsedFlagKey => $parsedFlagValue) {
             if ($parsedFlagKey) {
                 $s .= "[ON] $parsedFlagKey" . PHP_EOL;

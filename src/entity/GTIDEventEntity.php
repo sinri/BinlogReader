@@ -6,8 +6,8 @@ namespace sinri\BinlogReader\entity;
 
 class GTIDEventEntity extends BaseEventEntity
 {
-    protected $count;
-    protected $nextGTIDs = [];
+    protected $flag;
+    protected $nextGTID = null;
 
     /**
      * @inheritDoc
@@ -15,10 +15,8 @@ class GTIDEventEntity extends BaseEventEntity
     public function getHumanReadableDescription()
     {
         //return 'Mixed Body: ' . PHP_EOL . $this->bodyBuffer->showAsHexMatrix();
-        $string = "GTID Total " . $this->count . PHP_EOL;
-        foreach ($this->nextGTIDs as $nextGTID) {
-            $string .= "SET @@SESSION.GTID_NEXT= '{$nextGTID}';" . PHP_EOL;
-        }
+        $string = "GTID Flag " . $this->flag . PHP_EOL;
+        $string .= "SET @@SESSION.GTID_NEXT= '{$this->nextGTID}';" . PHP_EOL;
         return $string;
     }
 
@@ -38,17 +36,15 @@ class GTIDEventEntity extends BaseEventEntity
 
         // SET @@SESSION.GTID_NEXT= 'ca26641b-c772-11e7-acc2-7cd30ae4392a:2173000287'/*!*/;
 
-        // TODO I am not sure the count here
-        $this->count = $this->bodyBuffer->readNumberWithSomeBytesLE(0, 1);
+        // I am not sure the count here
+        $this->flag = $this->bodyBuffer->readNumberWithSomeBytesLE(0, 1);
         $offset = 1;
 
-        for ($i = 0; $i < $this->count; $i++) {
-            $sub = $this->bodyBuffer->getSubByteBuffer($offset, 16);
-            $offset += 16;
-            $gtid = $sub->showAsHexIDString([4, 2, 2, 2, 6], '-') . ':' . $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 8);
-            $offset += 8;
-            $this->nextGTIDs[] = $gtid;
-        }
+        $sub = $this->bodyBuffer->getSubByteBuffer($offset, 16);
+        $offset += 16;
+        $gtid = $sub->showAsHexIDString([4, 2, 2, 2, 6], '-') . ':' . $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 8);
+        $offset += 8;
+        $this->nextGTID = $gtid;
     }
 
 }

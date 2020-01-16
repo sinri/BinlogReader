@@ -111,7 +111,10 @@ class TableMapEventEntity extends BaseEventEntity
         //$this->columnMetaDef=$reader->readLenencString();
         //$columnMetaDefBytes=$reader->readNumber(1);
         // TODO need to understand this byte
-        $offset += 1;
+        // Packed integer. The length of the metadata block.
+        //$offset += 1;
+        $this->bodyBuffer->readLenencInt($offset, $tempLength);
+        $offset += $tempLength;
 //        for($i=0;$i<$columnMetaDefBytes;$i++){
 //            $this->columnMetaDef[]=$reader->readNumber(1);
 //        }
