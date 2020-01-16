@@ -14,6 +14,7 @@ class DoubleType extends BaseType
     {
         $outputLength = 8;
         $number = $buffer->readNumberWithSomeBytesLE(0, $outputLength);
-        return unpack('d', pack('q', $number));
+        $pack = unpack('d', pack('q', $number));
+        return $pack[1];
     }
 }

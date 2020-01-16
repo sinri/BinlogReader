@@ -7,6 +7,14 @@ namespace sinri\BinlogReader\entity;
 use sinri\BinlogReader\BRByteBuffer;
 use sinri\BinlogReader\BRKit;
 
+/**
+ * The first event used in Row Based Replication declares how a table that is about to be changed is defined.
+ * The TABLE_MAP_EVENT defines the structure if the tables that are about to be changed.
+ * @see https://dev.mysql.com/doc/internals/en/table-map-event.html
+ *
+ * Class TableMapEventEntity
+ * @package sinri\BinlogReader\entity
+ */
 class TableMapEventEntity extends BaseEventEntity
 {
     public $tableId;

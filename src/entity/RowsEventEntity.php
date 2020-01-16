@@ -6,8 +6,15 @@ namespace sinri\BinlogReader\entity;
 
 use Exception;
 use sinri\ark\core\ArkHelper;
+use sinri\BinlogReader\BRByteBuffer;
 use sinri\BinlogReader\BREnv;
 
+/**
+ * @see https://dev.mysql.com/doc/internals/en/rows-event.html
+ *
+ * Class RowsEventEntity
+ * @package sinri\BinlogReader\entity
+ */
 class RowsEventEntity extends BaseEventEntity
 {
     /*
@@ -53,6 +60,12 @@ class RowsEventEntity extends BaseEventEntity
      * Otherwise it refers to a table defined by TABLE_MAP_EVENT.
      */
     public $tableId;
+
+    const FLAG_END_OF_STATEMENT = 0x0001;
+    const FLAG_NO_FOREIGN_KEY_CHECKS = 0x0002;
+    const FLAG_NO_UNIQUE_KEY_CHECKS = 0x0004;
+    const FLAG_ROW_HAS_COLUMNS = 0x0008;
+
     /**
      * @var int
      * 0x0001 end of statement
@@ -60,7 +73,12 @@ class RowsEventEntity extends BaseEventEntity
      * 0x0004 no unique key checks
      * 0x0008 row has a columns
      */
-    public $flags;
+    public $flagsValue;
+    /**
+     * @var array
+     */
+    public $parsedFlags;
+
     public $extraDataLength;
     public $extraData;
 
@@ -79,6 +97,14 @@ class RowsEventEntity extends BaseEventEntity
 
     public $rows;
 
+    private function getColumnDefinitionExpression($index)
+    {
+        $column_type_code = $this->getTableFromTableMap()->columnTypeDef[$index];
+        $column_type_name = TableColumnTypeProtocol::getTypeName($column_type_code);
+        $column_meta = $this->getTableFromTableMap()->columnMetaDef[$index];
+        return "$column_type_code ({$column_type_name}) with Meta "
+            . (is_a($column_meta, BRByteBuffer::class) ? $column_meta->showAsInlineHexForNumberLE() : json_encode($column_meta));
+    }
 
     /**
      * @inheritDoc
@@ -86,15 +112,20 @@ class RowsEventEntity extends BaseEventEntity
     public function getHumanReadableDescription()
     {
         $s = "METHOD: " . $this->method . ' VERSION: ' . $this->version . PHP_EOL
-            . 'Table ID: ' . $this->tableId . ' Flag: ' . $this->flags . PHP_EOL
-            . ($this->version === self::VERSION_2 ? (json_encode($this->extraData) . PHP_EOL) : '')
+            . 'Table ID: ' . $this->tableId . ' Flag: ' . $this->flagsValue . PHP_EOL;
+        foreach ($this->parsedFlags as $parsedFlagKey => $parsedFlagValue) {
+            if ($parsedFlagKey) {
+                $s .= "[ON] $parsedFlagKey" . PHP_EOL;
+            }
+        }
+        $s .= ($this->version === self::VERSION_2 ? (json_encode($this->extraData) . PHP_EOL) : '')
             . 'Column Count: ' . $this->columnNumber . PHP_EOL;
         for ($rowIndex = 0; $rowIndex < count($this->rows); $rowIndex++) {
             $s .= "Image for Row " . $rowIndex . PHP_EOL;
             //var_dump($this->rows[$rowIndex][0]);
             for ($i = 0; $i < count($this->rows[$rowIndex][0]); $i++) {
                 $column = $this->rows[$rowIndex][0][$i];
-                $s .= $column['used_column_index'] . ": No." . $column['column_def_index'] . " defined column";
+                $s .= "Column [{$column['column_def_index']}] " . $this->getColumnDefinitionExpression($column['column_def_index']);//$column['used_column_index'] . ": No." . $column['column_def_index'] . " defined column";
                 if ($column['is_null']) {
                     $s .= ' [NULL]';
                 }
@@ -105,7 +136,7 @@ class RowsEventEntity extends BaseEventEntity
                 $s .= 'Rows matched above conditions were updated to this:' . PHP_EOL;
                 for ($i = 0; $i < count($this->rows[$rowIndex][1]); $i++) {
                     $column = $this->rows[$rowIndex][1][$i];
-                    $s .= $column['used_column_index'] . ": No." . $column['column_def_index'] . " defined column";
+                    $s .= "Column [{$column['column_def_index']}] " . $this->getColumnDefinitionExpression($column['column_def_index']);//$column['used_column_index'] . ": No." . $column['column_def_index'] . " defined column";
                     if ($column['is_null']) {
                         $s .= ' [NULL]';
                     }
@@ -137,8 +168,15 @@ class RowsEventEntity extends BaseEventEntity
             $offset += 6;
         }
 
-        $this->flags = $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 2);//$reader->readNumber(2);
+        $this->flagsValue = $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 2);//$reader->readNumber(2);
         $offset += 2;
+
+        $this->parsedFlags = [
+            'FLAG_END_OF_STATEMENT' => (($this->flagsValue & self::FLAG_END_OF_STATEMENT) > 0),
+            'FLAG_NO_FOREIGN_KEY_CHECKS' => (($this->flagsValue & self::FLAG_NO_FOREIGN_KEY_CHECKS) > 0),
+            'FLAG_NO_UNIQUE_KEY_CHECKS' => (($this->flagsValue & self::FLAG_NO_UNIQUE_KEY_CHECKS) > 0),
+            'FLAG_ROW_HAS_COLUMNS' => (($this->flagsValue & self::FLAG_ROW_HAS_COLUMNS) > 0),
+        ];
 
         if ($this->version == self::VERSION_2) {
             $this->extraDataLength = $this->bodyBuffer->readNumberWithSomeBytesLE($offset, 2);//$reader->readNumber(2);

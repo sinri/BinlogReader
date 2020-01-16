@@ -7,6 +7,10 @@ namespace sinri\BinlogReader\entity;
  * Class TableColumnTypeProtocol
  * @package sinri\BinlogReader\entity
  * @see https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
+ * @see https://dev.mysql.com/doc/internals/en/binary-protocol-value.html Note this is before 5.6.4
+ * @see https://blog.csdn.net/ppvqq/article/details/47424163 How Date and Time stored before and after 5.6.4
+ * @see https://dev.mysql.com/doc/refman/5.6/en/storage-requirements.html For Special String Types VC,Enum,etc.
+ * @see https://www.cnblogs.com/billyxp/p/3548540.html as well above
  */
 class TableColumnTypeProtocol
 {

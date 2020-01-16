@@ -8,6 +8,17 @@ use Exception;
 use sinri\BinlogReader\BREnv;
 use sinri\BinlogReader\BRKit;
 
+/**
+ * Binlog::FORMAT_DESCRIPTION_EVENT
+ * A format description event is the first event of a binlog for binlog-version 4. It describes how the other events are layed out.
+ *
+ * Note: added in MySQL 5.0.0 as replacement for START_EVENT_V3
+ *
+ * @see https://dev.mysql.com/doc/internals/en/format-description-event.html
+ *
+ * Class FormatDescriptionEventEntity
+ * @package sinri\BinlogReader\entity
+ */
 class FormatDescriptionEventEntity extends BaseEventEntity
 {
     public $binlogVersion;

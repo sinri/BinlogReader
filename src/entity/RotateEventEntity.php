@@ -3,7 +3,14 @@
 
 namespace sinri\BinlogReader\entity;
 
-
+/**
+ * Binlog::ROTATE_EVENT
+ * The rotate event is added to the binlog as last event to tell the reader what binlog to request next.
+ * @see https://dev.mysql.com/doc/internals/en/rotate-event.html
+ *
+ * Class RotateEventEntity
+ * @package sinri\BinlogReader\entity
+ */
 class RotateEventEntity extends BaseEventEntity
 {
 

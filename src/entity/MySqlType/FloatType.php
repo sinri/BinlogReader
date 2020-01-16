@@ -14,6 +14,7 @@ class FloatType extends BaseType
     {
         $outputLength = 4;
         $number = $buffer->readNumberWithSomeBytesLE(0, $outputLength);
-        return unpack('f', pack('i', $number));
+        $pack = unpack('f', pack('i', $number));
+        return $pack[1];
     }
 }
