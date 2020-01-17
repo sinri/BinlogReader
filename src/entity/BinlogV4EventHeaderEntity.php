@@ -20,6 +20,8 @@ use sinri\BinlogReader\BRByteBuffer;
  */
 class BinlogV4EventHeaderEntity
 {
+    const EVENT_HEADER_BYTE_COUNT = 19;
+
     const TYPE_UNKNOWN_EVENT = 0x00;
     const TYPE_START_EVENT_V3 = 0x01;
     const TYPE_QUERY_EVENT = 0x02;

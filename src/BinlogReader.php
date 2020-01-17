@@ -94,7 +94,7 @@ class BinlogReader
                     break;
                 }
                 BREnv::getLogger()->debug(__METHOD__ . '@' . __LINE__ . ' get header', ['header' => $header]);
-                $bodyLength = $header->eventLength - 19 - BREnv::checksumByteCount();
+                $bodyLength = $header->eventLength - BinlogV4EventHeaderEntity::EVENT_HEADER_BYTE_COUNT - BREnv::checksumByteCount();
                 $bodyBuffer = BRByteBuffer::pickFixedBuffer($this->binlogFileHandler, $bodyLength);
                 $checksum = null;
                 if (BREnv::checksumByteCount() > 0) {
@@ -154,7 +154,7 @@ class BinlogReader
     protected function readNextHeader()
     {
         try {
-            $headerBuffer = BRByteBuffer::pickFixedBuffer($this->binlogFileHandler, 19);
+            $headerBuffer = BRByteBuffer::pickFixedBuffer($this->binlogFileHandler, BinlogV4EventHeaderEntity::EVENT_HEADER_BYTE_COUNT);
             return new BinlogV4EventHeaderEntity($headerBuffer);
         } catch (Exception $exception) {
             BREnv::getLogger()->warning(__METHOD__ . '@' . __LINE__ . ' ' . $exception->getMessage());
