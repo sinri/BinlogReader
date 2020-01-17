@@ -7,6 +7,10 @@ namespace sinri\BinlogReader\entity\MySqlType;
 use Exception;
 use sinri\ark\core\ArkHelper;
 
+/**
+ * Class DecimalType
+ * @package sinri\BinlogReader\entity\MySqlType
+ */
 class DecimalType extends BaseType
 {
 
@@ -65,6 +69,13 @@ class DecimalType extends BaseType
         // -> invert the first bit 0x81 0x0dfb38d2 . 0x04d2
         // above is positive (started with bit 1), if negative, revert all bits (started with bit 0)
         // -> 0x7e 0xf204c72d 0xfb2d
+
+        // 0x80 0x00 0x00 0x00 0x00 0x00 0x29 0x0c
+        // First bit is 0b1XXXXXXX so it is positive
+        // turn this over to
+        // 0x00 0x00 0x00 0x00 | 0x00 0x00 0x29 0x0c
+        // i.e. [000000000] [000010508]
+
     }
 
     /**

@@ -69,7 +69,7 @@ class FormatDescriptionEventEntity extends BaseEventEntity
             $this->postHeaderLengthForAllEventTypes[$i] = $this->bodyBuffer->readNumberWithSomeBytesLE(56 + $i, 1);//$reader->readNumber(1);
         }
 
-        // TODO I wonder why there is one more byte (as I found is 0x01), I now try to eat it and ignore it.
+        // I wonder why there is one more byte (as I found is 0x01), I now try to eat it and ignore it.
         $this->theLastUnknownByte = $this->bodyBuffer->readNumberWithSomeBytesLE(56 + $typeCount, 1);//$reader->readNumber(1);
 
         return $this;

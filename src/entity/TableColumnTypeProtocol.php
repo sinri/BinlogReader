@@ -34,6 +34,7 @@ class TableColumnTypeProtocol
     const Protocol_MYSQL_TYPE_TIMESTAMP2 = 0x11;//	see Protocol_MYSQL_TYPE_TIMESTAMP
     const Protocol_MYSQL_TYPE_DATETIME2 = 0x12;//	see Protocol_MYSQL_TYPE_DATETIME
     const Protocol_MYSQL_TYPE_TIME2 = 0x13;//	see Protocol_MYSQL_TYPE_TIME
+    const Protocol_MYSQL_TYPE_JSON = 0xf5;// Introduced in 5.7.8
     const Protocol_MYSQL_TYPE_NEWDECIMAL = 0xf6;//	Implemented by ProtocolBinary_MYSQL_TYPE_NEWDECIMAL
     const Protocol_MYSQL_TYPE_ENUM = 0xf7;//	Implemented by ProtocolBinary_MYSQL_TYPE_ENUM
     const Protocol_MYSQL_TYPE_SET = 0xf8;//	Implemented by ProtocolBinary_MYSQL_TYPE_SET

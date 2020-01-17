@@ -17,8 +17,28 @@ class BinlogReader
 
     protected $parseStartTimestamp;
     protected $parseEndTimestamp;
+    /**
+     * @var callable function($event,$eventIndex)
+     */
+    protected $eventHandler;
 
-    protected $events;
+    /**
+     * @return callable
+     */
+    public function getEventHandler()
+    {
+        return $this->eventHandler;
+    }
+
+    /**
+     * @param callable $eventHandler
+     * @return BinlogReader
+     */
+    public function setEventHandler($eventHandler): BinlogReader
+    {
+        $this->eventHandler = $eventHandler;
+        return $this;
+    }
 
     /**
      * BinlogReader constructor.
@@ -57,6 +77,7 @@ class BinlogReader
         BREnv::getLogger()->setBuffer($loggerBuffer);
 
         // events
+        $eventIndex = 0;
         while (true) {
             $header = null;
             $bodyBuffer = null;
@@ -88,11 +109,15 @@ class BinlogReader
 
                 BREnv::getLogger()->sendCommandToBuffer(ArkLoggerBufferForRepeatJobDebug::COMMAND_REPORT_NORMAL);
                 $this->showProgress("Parsed This Block");
+
+                if ($this->eventHandler !== null) {
+                    $handleResult = call_user_func_array($this->eventHandler, [$event, $eventIndex]);
+                    BREnv::getLogger()->info("Handler Processed", ['result' => $handleResult]);
+                }
+
+                $eventIndex++;
             } catch (Exception $exception) {
-                BREnv::getLogger()->error("ERROR WHILE READING: " . $exception->getMessage() . PHP_EOL . $exception->getTraceAsString());
-//                foreach ($exception->getTrace() as $trace){
-//                    BREnv::getLogger()->error("↘ ",$trace);
-//                }
+                BREnv::getLogger()->error("ERROR WHILE READING: " . $exception->getMessage());
                 BREnv::getLogger()->error("HEADER\t: " . PHP_EOL . $header);
                 BREnv::getLogger()->error("BODY\t: " . PHP_EOL . $bodyBuffer);
                 BREnv::getLogger()->error("CHECKSUM\t:" . $checksum);
@@ -100,9 +125,11 @@ class BinlogReader
                 BREnv::getLogger()->sendCommandToBuffer(ArkLoggerBufferForRepeatJobDebug::COMMAND_REPORT_ERROR);
 
                 $this->showProgress("Error in parsing this block");
-                break;
+                throw $exception;
             }
         }
+
+        $this->showProgress("Completed");
 
         $this->parseEndTimestamp = microtime(true);
 

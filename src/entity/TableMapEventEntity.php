@@ -108,18 +108,13 @@ class TableMapEventEntity extends BaseEventEntity
             $offset += 1;
         }
 
-        //$this->columnMetaDef=$reader->readLenencString();
-        //$columnMetaDefBytes=$reader->readNumber(1);
-        // TODO need to understand this byte
+        // need to understand this byte
         // Packed integer. The length of the metadata block.
-        //$offset += 1;
         $this->bodyBuffer->readLenencInt($offset, $tempLength);
         $offset += $tempLength;
-//        for($i=0;$i<$columnMetaDefBytes;$i++){
-//            $this->columnMetaDef[]=$reader->readNumber(1);
-//        }
+
         for ($i = 0; $i < $this->columnCount; $i++) {
-            // TODO the length definition @see https://dev.mysql.com/doc/internals/en/table-map-event.html
+            // the length definition @see https://dev.mysql.com/doc/internals/en/table-map-event.html
             // not fulfilled yet!
             switch ($this->columnTypeDef[$i]) {
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_STRING:
@@ -129,18 +124,21 @@ class TableMapEventEntity extends BaseEventEntity
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_NEWDECIMAL:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_ENUM:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_SET:
+                case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_BIT:
                     $this->columnMetaDef[$i] = $this->bodyBuffer->getSubByteBuffer($offset, 2);//$reader->readNumber(2);
                     $offset += 2;
                     break;
+                case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_GEOMETRY:
+                case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_JSON:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_BLOB:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_DOUBLE:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_FLOAT:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_DATETIME2:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_TIMESTAMP2:
+                case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_TIME2:
                     $this->columnMetaDef[$i] = $this->bodyBuffer->getSubByteBuffer($offset, 1);//$reader->readNumber(1);
                     $offset += 1;
                     break;
-                case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_BIT:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_DATE:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_DATETIME:
                 case TableColumnTypeProtocol::Protocol_MYSQL_TYPE_TIMESTAMP:
@@ -158,7 +156,6 @@ class TableMapEventEntity extends BaseEventEntity
 
 
         $nullBitmapLength = ($this->columnCount + 7) >> 3;
-//        $this->nullBitmap=$reader->readString($nullBitmapLength);
         $this->nullBitmap = $this->bodyBuffer->getSubByteBuffer($offset, $nullBitmapLength);//$reader->readByteBuffer($nullBitmapLength);
         $offset += $nullBitmapLength;
     }
