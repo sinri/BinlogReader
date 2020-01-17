@@ -179,6 +179,9 @@ abstract class BaseEventEntity
 
             case BinlogV4EventHeaderEntity::TYPE_ANONYMOUS_GTID_EVENT:
             case BinlogV4EventHeaderEntity::TYPE_USER_VAR_EVENT:
+            case BinlogV4EventHeaderEntity::TYPE_TRANSACTION_CONTEXT_EVENT:
+            case BinlogV4EventHeaderEntity::TYPE_VIEW_CHANGE_EVENT:
+            case BinlogV4EventHeaderEntity::TYPE_XA_PREPARE_LOG_EVENT:
                 BREnv::getLogger()->warning("Unsupported Event Type", ['header' => $header]);
                 //throw new Exception("Unknown Type " . $header->typeCode . '(0x' . dechex($header->typeCode) . ')');
                 $entity = new IgnoredEventEntity($header, $bodyBuffer, $checksum);

@@ -56,6 +56,11 @@ class BinlogV4EventHeaderEntity
     const TYPE_GTID_EVENT = 0x21;
     const TYPE_ANONYMOUS_GTID_EVENT = 0x22;
     const TYPE_PREVIOUS_GTIDS_EVENT = 0x23;
+    // the beneath added in MySQL 5.7
+    const TYPE_TRANSACTION_CONTEXT_EVENT = 0x24;
+    const TYPE_VIEW_CHANGE_EVENT = 0x25;
+    const TYPE_XA_PREPARE_LOG_EVENT = 0x26;// like XID
+    // const TYPE_ENUM_END_EVENT=?;
 
 
     const FLAG_LOG_EVENT_BINLOG_IN_USE_F = 0x0001;
@@ -106,6 +111,9 @@ class BinlogV4EventHeaderEntity
         self::TYPE_GTID_EVENT => 'TYPE_GTID_EVENT:0x21',
         self::TYPE_ANONYMOUS_GTID_EVENT => 'TYPE_ANONYMOUS_GTID_EVENT:0x22',
         self::TYPE_PREVIOUS_GTIDS_EVENT => 'TYPE_PREVIOUS_GTIDS_EVENT:0x23',
+        self::TYPE_TRANSACTION_CONTEXT_EVENT => 'TYPE_TRANSACTION_CONTEXT_EVENT:0x24',
+        self::TYPE_VIEW_CHANGE_EVENT => 'TYPE_VIEW_CHANGE_EVENT:0x25',
+        self::TYPE_XA_PREPARE_LOG_EVENT => 'TYPE_XA_PREPARE_LOG_EVENT:0x26',
     ];
 
     public $timestamp;
