@@ -70,7 +70,7 @@ class BinlogReader
 
         // file head
         $magic_number_chars = fread($this->binlogFileHandler, 4);
-        ArkHelper::quickNotEmptyAssert("Not a valid MySQL Binlog File Header", ($magic_number_chars !== "\xfe\x62\x69\6e"));
+        ArkHelper::quickNotEmptyAssert("Not a valid MySQL Binlog File Header: " . BRKit::hexString($magic_number_chars), ($magic_number_chars === "\xfe\x62\x69\x6e"));
 
         // logger buffer
         $loggerBuffer = new ArkLoggerBufferForRepeatJobDebug(null, true, BREnv::getLogger());
