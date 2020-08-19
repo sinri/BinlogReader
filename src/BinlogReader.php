@@ -169,10 +169,10 @@ class BinlogReader
         $percent = number_format(100.0 * $offset / $whole, 2);
 
         $currentTimestamp = microtime(true);
-        $cost = ($currentTimestamp - $this->parseStartTimestamp);
+        $cost = number_format($currentTimestamp - $this->parseStartTimestamp, 2);
         $predictMore = number_format(1.0 * $cost / $offset * ($whole - $offset), 2);
 
-        echo "\rCurrent Bytes: " . $offset . " ({$percent}%)\t Time Cost: {$cost}s\t Predict Ends in {$predictMore}s \t Message: " . $message;
+        echo "\rCurrent Bytes: " . $offset . " ({$percent}%) Time Cost: {$cost}s Predict Ends in {$predictMore}s Message: " . $message . ' 〆';
     }
 
 }
